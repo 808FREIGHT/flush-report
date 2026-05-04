@@ -1,0 +1,1043 @@
+// Design philosophy reminder: Coastal Public-Service News for The Flush Report.
+// This page should feel brighter, warmer, and more human than the first version: professional white
+// editorial surfaces, ocean blue backgrounds, sea-glass accents, calm broadcast structure, and a
+// soulful Hawaii-origin mission centered on consumer accountability rather than corporate shaming.
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowRight,
+  BadgeDollarSign,
+  Camera,
+  Factory,
+  Gauge,
+  Landmark,
+  Newspaper,
+  Recycle,
+  ShieldAlert,
+  ShoppingBag,
+  Zap,
+  Waves,
+} from "lucide-react";
+import { FaFacebookF, FaInstagram, FaTiktok, FaXTwitter, FaYoutube } from "react-icons/fa6";
+import { SiThreads } from "react-icons/si";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DailyCostSignal,
+  DailyNewsStory,
+  fallbackCostSignals,
+  fallbackDailyStories,
+  fallbackWildlifeImpactStories,
+  isUsOnlyStory,
+  loadDailyCostSignals,
+  loadDailyWastewaterStories,
+  loadWeeklyWildlifeImpactStories,
+  WildlifeImpactStory,
+} from "@/lib/dailyNews";
+import { lookupRepresentativesByZip, type Representative } from "@/lib/representatives";
+
+const defaultTickerStories = fallbackDailyStories.slice(0, 5).map((story) => ({
+  ...story,
+}));
+
+const timeZoneOptions = [
+  { label: "Hilo", value: "Pacific/Honolulu" },
+  { label: "Los Angeles", value: "America/Los_Angeles" },
+  { label: "Denver", value: "America/Denver" },
+  { label: "Chicago", value: "America/Chicago" },
+  { label: "New York", value: "America/New_York" },
+  { label: "UTC", value: "UTC" },
+];
+
+const featurePills = [
+  {
+    title: "Daily News",
+    eyebrow: "Latest coverage",
+    copy: "Source-backed wastewater news, laws, system failures, and public warnings.",
+    href: "/news",
+    action: "Read the latest",
+    icon: Newspaper,
+    neonTitle: true,
+  },
+  {
+    title: "Social Media",
+    eyebrow: "The Flush Report",
+    copy: "Upload a video and be featured on The Flush Report!",
+    href: "/featured",
+    action: "Upload a video and be featured on The Flush Report!",
+    icon: Camera,
+    showSocialIcons: true,
+  },
+  {
+    title: "Merch",
+    eyebrow: "Latest gear",
+    copy: "Latest shirts, hats, stickers, and worksite-friendly gear for the message.",
+    href: null,
+    action: "Coming soon",
+    icon: ShoppingBag,
+  },
+];
+
+const adPlacements = {
+  awareness: {
+    label: "Sponsor",
+    title: "Support public education",
+    copy: "This space supports organizations committed to clean water, public infrastructure, and consumer awareness.",
+    slot: "Awareness partner",
+  },
+  field: {
+    label: "Sponsor",
+    title: "Equipment & field gear",
+    copy: "Built for the operators and crews who keep systems running. Featured partners serve the wastewater and infrastructure industry.",
+    slot: "Industry partner",
+  },
+  community: {
+    label: "Sponsor",
+    title: "Industry partners",
+    copy: "Utilities, manufacturers, and service providers supporting public education and infrastructure awareness.",
+    slot: "Industry partner",
+  },
+  closing: {
+    label: "Sponsor",
+    title: "Closing sponsor",
+    copy: "A final word from partners who believe in clean water and informed communities.",
+    slot: "Partner",
+  },
+};
+
+const socialApps = [
+  { label: "Instagram", key: "instagram", Icon: FaInstagram },
+  { label: "TikTok", key: "tiktok", Icon: FaTiktok },
+  { label: "Facebook", key: "facebook", Icon: FaFacebookF },
+  { label: "YouTube", key: "youtube", Icon: FaYoutube },
+  { label: "X", key: "x", Icon: FaXTwitter },
+  { label: "Threads", key: "threads", Icon: SiThreads },
+];
+
+
+const thinkBeforeImages = [
+  { src: "/think-before/01.png", alt: "Heavy rag ball pulled from wastewater intake" },
+  { src: "/think-before/02.png", alt: "Large wipe clog removed by wastewater crew" },
+  { src: "/think-before/03.png", alt: "Wet wipe mass caught on plant screen" },
+  { src: "/think-before/04.png", alt: "Soggy wipe and debris buildup from line cleanup" },
+  { src: "/think-before/05.png", alt: "Dark sludge and wipes packed in channel" },
+  { src: "/think-before/06.png", alt: "Wipe debris mound removed from drain opening" },
+  { src: "/think-before/07.png", alt: "Clogged wipe mass with organic debris on platform" },
+  { src: "/think-before/08.png", alt: "Rag-heavy clog pulled from wastewater lane" },
+  { src: "/think-before/09.png", alt: "Light-colored debris pile beside storm channel" },
+  { src: "/think-before/10.png", alt: "Wipes tangled around nozzle and cleanup wand" },
+  { src: "/think-before/11.png", alt: "Trash-laden wipe debris pile from field response" },
+  { src: "/think-before/12.png", alt: "Close-up of mixed trash and wipes during removal" },
+  { src: "/think-before/13.png", alt: "Dark fibrous blockage with cable in runoff" },
+  { src: "/think-before/14.png", alt: "Large pale clog pile removed from trench" },
+  { src: "/think-before/15.png", alt: "Truck bin full of extracted wipes and sludge" },
+];
+
+const impactStats = [
+  {
+    label: "Pump repairs",
+    value: "$100–$100K+",
+    copy: "Preventable clogs can turn routine maintenance into expensive emergency work.",
+    icon: Gauge,
+  },
+  {
+    label: "Public burden",
+    value: "Taxpayers pay",
+    copy: "Money spent clearing bad flushes is money not going toward stronger community needs.",
+    icon: Landmark,
+  },
+  {
+    label: "Downstream impact",
+    value: "Water + landfill",
+    copy: "What disappears from a toilet can reappear as operator labor, hauled debris, or water-quality strain.",
+    icon: Waves,
+  },
+];
+
+const evidenceBoard = [
+  {
+    title: "Pump repairs",
+    items: [
+      {
+        stat: "$50K+",
+        copy: "A city reported spending over $50,000 to replace one lift-station pump after wipe clogs pushed it beyond repair.",
+        source: "Cordova Times (2026)",
+        url: "https://thecordovatimes.com/2026/04/07/50k-city-sewer-pump-replacement-attributed-to-un-flushable-wipes/",
+      },
+      {
+        stat: "$25K-$60K",
+        copy: "Utility notice reports pump replacements can cost $25,000-$60,000 each before overtime and disposal costs.",
+        source: "City of Lennox (2026)",
+        url: "https://www.cityoflennoxsd.com/article/2816312",
+      },
+      {
+        stat: "$4K-$8K",
+        copy: "A municipal utility manager cited pump repair costs of $4,000-$8,000 per pump from wipe-related failures.",
+        source: "KRIS report / San Diego MUD #1",
+        url: "https://www.kristv.com/news/local-news/in-your-neighborhood/jim-wells-county/san-diego/flushable-wipes-damaging-san-diego-city-sewer-pumps",
+      },
+    ],
+  },
+  {
+    title: "Public burden",
+    items: [
+      {
+        stat: "$441M/yr",
+        copy: "National utility estimate: wipes add about $441 million per year in collection-system operating costs.",
+        source: "NACWA Executive Summary",
+        url: "https://www.nacwa.org/docs/default-source/resources---public/executive-summary_cost_of_wipes.pdf",
+      },
+      {
+        stat: "$30,467/yr",
+        copy: "Average additional cost burden per utility, with some states near $100,000 per utility each year.",
+        source: "NACWA Executive Summary",
+        url: "https://www.nacwa.org/docs/default-source/resources---public/executive-summary_cost_of_wipes.pdf",
+      },
+      {
+        stat: "$130K + $370,695.75",
+        copy: "One town cited rising wipe jams while approving major maintenance and sewer cleaning contract costs.",
+        source: "Lockport coverage (2026)",
+        url: "https://www.yahoo.com/news/articles/flushing-wet-wipes-costs-town-131600152.html",
+      },
+    ],
+  },
+  {
+    title: "Downstream impact",
+    items: [
+      {
+        stat: "$414M + 4,300 jobs",
+        copy: "NOAA estimates doubling marine debris can cut tourism spending by $414 million and nearly 4,300 jobs in one region.",
+        source: "NOAA Marine Debris Program",
+        url: "https://marinedebris.noaa.gov/research/economic-impacts-marine-debris-tourism-dependent-communities",
+      },
+      {
+        stat: "$217M + 3,700 jobs",
+        copy: "NOAA also estimates near-elimination of debris could add $217 million and over 3,700 jobs in coastal Ohio.",
+        source: "NOAA Marine Debris Program",
+        url: "https://marinedebris.noaa.gov/research/economic-impacts-marine-debris-tourism-dependent-communities",
+      },
+      {
+        stat: "$11.5B/yr",
+        copy: "EPA cites U.S. litter cleanup spending near $11.5 billion per year, a broad burden carried by communities.",
+        source: "EPA Trash Free Waters",
+        url: "https://www.epa.gov/trash-free-waters/learn-about-aquatic-trash",
+      },
+    ],
+  },
+];
+
+const flowSteps = [
+  {
+    step: "01",
+    title: "The FLUSH",
+    copy: "When you flush wipes, rags, grease, and trash, they do not simply disappear. It is the start of what can become an expensive repair or environmental catastrophe, leaving taxpayers to pick up the unexpected bill. DO NOT FLUSH FLUSHABLE WIPES!!!",
+    icon: ShieldAlert,
+  },
+  {
+    step: "02",
+    title: "THE STRESS ON SEWER SYSTEMS",
+    copy: "After you flush, so-called flushable wipes and other non-toilet items enter the sewer system, also called the collection system. This system includes sewer lines and pump stations that move wastewater to treatment plants. When anything other than the 3 Ps (pee, poop, and toilet paper) is flushed, it puts serious stress on pumps and sewer lines. That stress can lead to clogs, equipment damage, and expensive repairs. DO NOT FLUSH FLUSHABLE WIPES!!!",
+    icon: Factory,
+  },
+  {
+    step: "03",
+    title: "THE REPAIR.",
+    copy: "Millions of taxpayer dollars have already been invested into wastewater systems. Flushable wipes are a leading cause of costly repairs, overtime labor, emergency response, and hazardous-condition work. Some pumps become irreparable and can cost from $100 to $100,000+ to replace. Burst sewer lines can run into the millions to reroute, excavate, install, and reconnect system infrastructure. DO NOT FLUSH FLUSHABLE WIPES!!!",
+    icon: BadgeDollarSign,
+  },
+  {
+    step: "04",
+    title: "THE LANDFILL",
+    copy: "Flushable wipes and other non-flushable items do not simply disappear. After operators remove clogs from pumps and debris screening systems, they must then collect, store, and transport that material to THE LANDFILL. This adds more stress to systems that are already environmentally stressed. The extra tonnage increases financial burdens on taxpayers through heavier loads and more landfill trips at taxpayer expense. DO NOT FLUSH FLUSHABLE WIPES!!!",
+    icon: Recycle,
+  },
+];
+
+const HERO_WARNING_FALLBACK =
+  fallbackDailyStories.find((story) => /warning|alert|flushable wipes|wipes|do not flush/i.test(`${story.category} ${story.title} ${story.summary}`)) ??
+  fallbackDailyStories[0];
+
+function pickHeroWarningStory(stories: DailyNewsStory[]): DailyNewsStory {
+  const byRiskSignal = stories.find((story) =>
+    /(flushable wipes|wipes|do not flush|clog|sewer damage|utility warning|public works alert)/i.test(
+      `${story.category} ${story.title} ${story.summary}`,
+    ),
+  );
+  return byRiskSignal ?? HERO_WARNING_FALLBACK;
+}
+
+function ensureSentence(value: string): string {
+  const text = value.trim();
+  if (!text) return "";
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+}
+
+function sourceLogoUrl(sourceUrl?: string): string | null {
+  if (!sourceUrl) return null;
+  try {
+    const hostname = new URL(sourceUrl).hostname.replace(/^www\./, "");
+    return `https://icons.duckduckgo.com/ip3/${encodeURIComponent(hostname)}.ico`;
+  } catch {
+    return null;
+  }
+}
+
+const costSectionArticles = [
+  {
+    category: "Utility warning",
+    title: "City warns 'flushable' wipes are causing sewer damage and taxpayer costs",
+    source: "City of Lennox",
+    blurb: "A local utility warning that directly ties wipe misuse to repairs and ratepayer burden.",
+    url: "https://www.cityoflennoxsd.com/article/2816312",
+  },
+  {
+    category: "Operations alert",
+    title: "Public utilities report wipes clogging mains, lift stations, and pumps",
+    source: "Great Bend Public Utilities",
+    blurb: "Explains how crews repeatedly deal with avoidable blockages across core wastewater infrastructure.",
+    url: "https://www.greatbendks.net/CivicAlerts.aspx?AID=377",
+  },
+  {
+    category: "Cost signal",
+    title: "Flushing wipes adds major maintenance and sewer cleaning costs",
+    source: "Lockport coverage",
+    blurb: "Documents real budget impacts connected to persistent wipe-related system jams.",
+    url: "https://www.yahoo.com/news/articles/flushing-wet-wipes-costs-town-131600152.html",
+  },
+  {
+    category: "Industry research",
+    title: "Executive summary: annual utility burden from flushable wipes",
+    source: "NACWA",
+    blurb: "High-impact utility data showing recurring national cost pressure from wipe disposal behavior.",
+    url: "https://www.nacwa.org/docs/default-source/resources---public/executive-summary_cost_of_wipes.pdf",
+  },
+  {
+    category: "Legislation",
+    title: "Senate advances 'Do Not Flush' wipe labeling legislation",
+    source: "CASA",
+    blurb: "Tracks policy response to widespread cleanup, maintenance, and education costs.",
+    url: "https://casaweb.org/federal-legislative-update-4-13-26/",
+  },
+];
+
+function LiveClock() {
+  const [now, setNow] = useState(() => new Date());
+  const [timeZone, setTimeZone] = useState("Pacific/Honolulu");
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const liveTime = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
+  }).format(now);
+
+  return (
+    <div className="flex min-w-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3" aria-label="Live local date and time">
+      <Select value={timeZone} onValueChange={setTimeZone}>
+        <SelectTrigger
+          size="sm"
+          className="h-8 border-[#6f95c4] bg-white px-2 font-mono text-[10px] font-black uppercase tracking-[0.12em] text-[#87ceeb] shadow-sm hover:border-[#87ceeb] sm:h-9 sm:px-3"
+          aria-label="Select timezone for live clock"
+        >
+          <SelectValue placeholder="Time zone" />
+        </SelectTrigger>
+        <SelectContent align="end" className="border-[#c7d8eb] bg-white text-[#102a43]">
+          {timeZoneOptions.map((zone) => (
+            <SelectItem key={zone.value} value={zone.value} className="font-mono text-xs uppercase tracking-[0.08em]">
+              {zone.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <time
+        dateTime={now.toISOString()}
+        className="font-display text-lg font-black uppercase leading-none tracking-[0.08em] text-[#87ceeb] sm:text-xl"
+      >
+        {liveTime}
+      </time>
+    </div>
+  );
+}
+
+function formatTermEnd(value: string | null): string {
+  if (!value) return "Current term";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Current term";
+  return `Term ends ${parsed.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}`;
+}
+
+export default function Home() {
+  const [costSlideIndex, setCostSlideIndex] = useState(0);
+  const [thinkSlideIndex, setThinkSlideIndex] = useState(0);
+  const [heroStoryIndex, setHeroStoryIndex] = useState(0);
+  const [tickerStories, setTickerStories] = useState(defaultTickerStories);
+  const [dailyCostSignals, setDailyCostSignals] = useState<DailyCostSignal[]>(fallbackCostSignals);
+  const [wildlifeImpactStories, setWildlifeImpactStories] = useState<WildlifeImpactStory[]>(fallbackWildlifeImpactStories);
+  const [zipCodeInput, setZipCodeInput] = useState("");
+  const [repLookupError, setRepLookupError] = useState<string | null>(null);
+  const [isRepLookupLoading, setIsRepLookupLoading] = useState(false);
+  const [repLookupUpdatedAt, setRepLookupUpdatedAt] = useState<string | null>(null);
+  const [isAmbiguousZipLookup, setIsAmbiguousZipLookup] = useState(false);
+  const [representatives, setRepresentatives] = useState<Representative[]>([]);
+
+  const {
+    uniqueTickerStories,
+    uniqueWildlifeStories,
+    uniqueCostSignals,
+    uniqueCostSectionArticles,
+  } = useMemo(() => {
+    const dedupeWithinSection = <T extends { url: string }>(items: T[]) => {
+      const seen = new Set<string>();
+      return items.filter((item) => {
+        if (seen.has(item.url)) return false;
+        seen.add(item.url);
+        return true;
+      });
+    };
+
+    const ticker = dedupeWithinSection(tickerStories).slice(0, 6);
+
+    const wildlifePrimary = dedupeWithinSection(wildlifeImpactStories).slice(0, 3);
+    const wildlifeFill = dedupeWithinSection(fallbackWildlifeImpactStories).slice(0, Math.max(0, 3 - wildlifePrimary.length));
+    const wildlife = [...wildlifePrimary, ...wildlifeFill];
+
+    const costSignalsPrimary = dedupeWithinSection(dailyCostSignals).slice(0, 3);
+    const costSignalsFill = dedupeWithinSection(fallbackCostSignals).slice(0, Math.max(0, 3 - costSignalsPrimary.length));
+    const costSignals = [...costSignalsPrimary, ...costSignalsFill];
+
+    const costArticles = dedupeWithinSection(
+      costSectionArticles.filter((article) => isUsOnlyStory(article.title, article.blurb, "United States")),
+    );
+    const ensuredCostArticles = costArticles.length > 0 ? costArticles : costSectionArticles.slice(0, 1);
+
+    return {
+      uniqueTickerStories: ticker.length > 0 ? ticker : defaultTickerStories,
+      uniqueWildlifeStories: wildlife.length > 0 ? wildlife : fallbackWildlifeImpactStories,
+      uniqueCostSignals: costSignals.length > 0 ? costSignals : fallbackCostSignals,
+      uniqueCostSectionArticles: ensuredCostArticles,
+    };
+  }, [tickerStories, wildlifeImpactStories, dailyCostSignals]);
+
+  const costArticleCount = uniqueCostSectionArticles.length;
+  const activeHeroStory = uniqueTickerStories[heroStoryIndex] ?? HERO_WARNING_FALLBACK;
+  const heroSourceLogo = useMemo(
+    () => sourceLogoUrl(activeHeroStory.sourceUrl),
+    [activeHeroStory.sourceUrl],
+  );
+
+  useEffect(() => {
+    if (costArticleCount === 0) return;
+
+    const timer = window.setInterval(() => {
+      setCostSlideIndex((index) => (index + 1) % costArticleCount);
+    }, 4200);
+
+    return () => window.clearInterval(timer);
+  }, [costArticleCount]);
+
+  useEffect(() => {
+    setCostSlideIndex(0);
+  }, [costArticleCount]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setThinkSlideIndex((index) => (index + 1) % thinkBeforeImages.length);
+    }, 2800);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (uniqueTickerStories.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setHeroStoryIndex((index) => (index + 1) % uniqueTickerStories.length);
+    }, 10000);
+
+    return () => window.clearInterval(timer);
+  }, [uniqueTickerStories.length]);
+
+  useEffect(() => {
+    setHeroStoryIndex(0);
+  }, [uniqueTickerStories.length]);
+
+  useEffect(() => {
+    let active = true;
+
+    loadDailyWastewaterStories().then((stories) => {
+      if (!active) return;
+      setTickerStories(stories.slice(0, 6));
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleRepresentativeLookup = async () => {
+    setRepLookupError(null);
+    setIsRepLookupLoading(true);
+
+    try {
+      const result = await lookupRepresentativesByZip(zipCodeInput);
+      setRepresentatives(result.representatives);
+      setZipCodeInput(result.zip);
+      setRepLookupUpdatedAt(result.fetchedAt);
+      setIsAmbiguousZipLookup(result.isAmbiguousZip);
+    } catch (error) {
+      setRepresentatives([]);
+      setRepLookupUpdatedAt(null);
+      setIsAmbiguousZipLookup(false);
+      setRepLookupError(error instanceof Error ? error.message : "Unable to look up representatives right now.");
+    } finally {
+      setIsRepLookupLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    loadWeeklyWildlifeImpactStories().then((stories) => {
+      if (!active) return;
+      setWildlifeImpactStories(stories);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    loadDailyCostSignals().then((signals) => {
+      if (!active) return;
+      setDailyCostSignals(signals);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return (
+      <main className="min-h-screen overflow-hidden bg-white text-[#102a43] selection:bg-[#0b6fa4] selection:text-white dark:bg-[#111827] dark:text-[#e5edf7]">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-[#c7d8eb]/80 bg-white/92 shadow-[0_8px_30px_rgba(12,49,92,0.1)] backdrop-blur-xl dark:border-[#2b3950] dark:bg-[#0f172a]/92">
+          <div className="flex min-h-16 items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <a href="#top" className="group flex items-center gap-3" aria-label="The Flush Report home">
+            <div className="retro-news-logo">
+              <span className="retro-news-logo__channel" aria-label="TFR LIVE channel badge">
+                <img src="/tfr-logo-transparent-v1.png" alt="" className="retro-news-logo__exact" aria-hidden="true" />
+              </span>
+              <span className="retro-news-logo__title">
+                THE <span className="flush-accent-word">FLUSH</span> REPORT
+              </span>
+            </div>
+          </a>
+
+          <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
+            <LiveClock />
+          </div>
+        </div>
+      </header>
+
+      <div className="h-[86px] sm:h-[94px]" aria-hidden="true" />
+
+      <section aria-label="Quick access to Flush Report features" className="quick-access-shell relative z-20 border-b border-[#cdeaf5] bg-white px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl pb-2 pt-2">
+          <div className="grid gap-2 lg:grid-cols-3">
+            {featurePills.map((feature) => {
+              const content = (
+                <div className="flex h-full flex-col">
+                  <h3
+                    className={`${
+                      "neonTitle" in feature && feature.neonTitle
+                        ? "font-display text-[1.02rem] font-black uppercase leading-none tracking-[-0.02em] whitespace-nowrap"
+                        : "font-display text-[1.02rem] font-black uppercase leading-none tracking-[-0.02em] text-[#102a43]"
+                    }`}
+                  >
+                    <span className={"neonTitle" in feature && feature.neonTitle ? "live-flash-text" : undefined}>{feature.title}</span>
+                    {"neonTitle" in feature && feature.neonTitle ? (
+                      <Zap className="live-bolt live-bolt--card ml-1 inline-block align-middle" aria-hidden="true" />
+                    ) : null}
+                  </h3>
+                  <p className="mt-1 text-[0.73rem] font-extrabold leading-4 text-[#526d82] sm:text-[0.76rem]">{feature.copy}</p>
+                  {"showSocialIcons" in feature && feature.showSocialIcons ? (
+                    <div className="mt-1.5 flex flex-wrap gap-1" aria-label="FRTV social app emblems">
+                      {socialApps.map((app) => (
+                        <span key={app.label} className={`social-icon social-icon-${app.key}`} title={app.label} aria-label={app.label}>
+                          <app.Icon />
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  <span className="feature-cta-action mt-auto pt-1">
+                    {feature.action}
+                    {feature.href ? <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /> : null}
+                  </span>
+                </div>
+              );
+
+              return feature.href ? (
+                <a key={feature.title} href={feature.href} className="feature-pill group" aria-label={`${feature.title}: ${feature.copy}`}>
+                  {content}
+                </a>
+              ) : (
+                <div key={feature.title} className="feature-pill group">
+                  {content}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section id="top" className="hero-scroll-stage relative overflow-hidden bg-white">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(116,200,214,0.24),transparent_34%),linear-gradient(135deg,#ffffff_0%,#ffffff_48%,#f4fbff_100%)]" aria-hidden="true" />
+        <div className="coastal-grid absolute inset-0 opacity-50" aria-hidden="true" />
+
+        <div className="relative z-10 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+          <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_0.92fr] lg:items-stretch">
+            <div className="animate-rise-in">
+              <h1 className="max-w-6xl font-display text-[clamp(2.85rem,8.2vw,7.8rem)] font-black uppercase leading-[0.8] tracking-[-0.072em] text-[#102a43]">
+                <span className="block">Think</span>
+                <span className="mt-[0.05em] block tracking-[-0.05em] text-outline">Before</span>
+                <span className="mt-[0.05em] block">You</span>
+                <span className="flush-accent-word mt-[0.05em] block">Flush.</span>
+              </h1>
+              <div className="feature-pill mt-7 max-w-5xl">
+                <div className="flex items-start gap-3">
+                  {heroSourceLogo ? (
+                    <img
+                      src={heroSourceLogo}
+                      alt={`${activeHeroStory.source} logo`}
+                      className="mt-0.5 h-8 w-8 rounded-md border border-[#d6eaf2] bg-white object-contain p-1"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : null}
+                  <h3 className="font-display text-2xl font-black uppercase leading-[0.95] tracking-[-0.02em] text-[#102a43]">
+                    {activeHeroStory.title}
+                  </h3>
+                </div>
+                <p className="mt-3 font-mono text-[11px] font-black uppercase tracking-[0.11em] text-[#64748b]">
+                  Article: {activeHeroStory.title}
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <p className="font-mono text-[11px] font-black uppercase tracking-[0.11em] text-[#64748b]">
+                    {`By ${activeHeroStory.author || activeHeroStory.source} · ${activeHeroStory.date}`}
+                  </p>
+                  <a href={activeHeroStory.url} target="_blank" rel="noreferrer" className="article-read-button">
+                    READ ARTICLE <ArrowRight className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <aside className="hidden overflow-hidden lg:block" aria-label="Think before you flush field slideshow">
+              <div className="relative h-full min-h-[24rem] overflow-hidden rounded-2xl bg-[#eef5fc] shadow-[0_16px_36px_rgba(16,42,67,0.14)] xl:min-h-[30rem]">
+                {thinkBeforeImages.map((image, index) => (
+                  <img
+                    key={image.src}
+                    src={image.src}
+                    alt={image.alt}
+                    className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${index === thinkSlideIndex ? "opacity-100" : "opacity-0"}`}
+                  />
+                ))}
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section id="mission" className="relative border-y border-[#cdeaf5] bg-white px-4 py-8 sm:px-6 lg:px-8">
+        <div className="w-full">
+          <h2 className="mt-3 font-display text-[clamp(3.2rem,9.5vw,8.7rem)] font-black uppercase leading-[0.8] tracking-[-0.072em] text-[#102a43]">
+            From <span className="flush-accent-word">Flush</span> to Fish.
+          </h2>
+          <p className="mt-6 max-w-6xl text-xl leading-8 text-[#334e68] sm:text-2xl">
+            The Flush Report exists to give the public clear, source-backed facts about what happens after a bad flush. This is not abstract infrastructure talk: wipes and trash jam pumps, strain treatment systems, increase hauling, and push pressure downstream to the waters where we live, eat, and play.
+          </p>
+          <p className="mt-5 max-w-6xl text-xl leading-8 text-[#334e68] sm:text-2xl">
+            Our local story starts in Keaukaha and extends nationwide. What we flush does not disappear; it becomes worker labor, taxpayer cost, landfill tonnage, and environmental stress. Better flushing habits protect crews, infrastructure, and the ecosystems downstream.
+          </p>
+          <div className="mt-10 space-y-3" aria-label="Flush-to-system process steps">
+            {flowSteps.map((step) => {
+              const titleMatch = step.title.match(/^THE\s+(.+)$/i);
+              return (
+                <article key={step.step} className="flow-card flow-card--stacked w-full">
+                  <h3 className="font-display text-3xl font-black uppercase leading-none">
+                    {titleMatch ? (
+                      <>
+                        <span className="text-white">THE </span>
+                        <span className="flush-accent-word">{titleMatch[1]}</span>
+                      </>
+                    ) : (
+                      <span className="text-white">{step.title}</span>
+                    )}
+                  </h3>
+                  <p className="mt-3 text-xl leading-8 text-[#334e68] sm:text-2xl">{step.copy}</p>
+                </article>
+              );
+            })}
+          </div>
+
+        </div>
+      </section>
+
+      <section className="bg-white px-4 pb-16 pt-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-6 border-b border-[#d6eaf2] pb-4">
+            <p className="live-flash-badge">
+              <span className="live-flash-text">FLUSH REPORT LIVE</span>
+              <Zap className="live-bolt" aria-hidden="true" />
+            </p>
+            <h2 className="mt-2 font-mono text-[1.4rem] font-black uppercase tracking-[0.12em] text-[#102a43]">
+              Daily Nationwide Coverage Updates
+            </h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {uniqueCostSignals.map((signal) => (
+              <article key={`${signal.lane}-${signal.url}`} className="stat-card group">
+                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-[#64748b]">{signal.lane}</p>
+                <h3 className="mt-2 font-display text-5xl font-black uppercase leading-none text-[#102a43]">{signal.amount}</h3>
+                {signal.snippet ? <p className="mt-4 text-sm leading-6 text-[#526d82]">{signal.snippet}</p> : null}
+                <div className="mt-6 border-t border-[#d6eaf2] pt-3">
+                  {signal.location ? (
+                    <p className="font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#64748b]">{signal.location}</p>
+                  ) : null}
+                  <a
+                    href={signal.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="article-read-button mt-2"
+                  >
+                    READ ARTICLE <ArrowRight className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white px-4 pb-8 sm:px-6 lg:px-8" aria-label="Weekly wildlife impact archive">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-4 md:grid-cols-3">
+            {uniqueWildlifeStories.map((story) => (
+              <article key={story.url} className="news-card p-5">
+                <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#64748b]">
+                  Archive to present · {story.date}
+                </p>
+                <h3 className="mt-3 font-display text-2xl font-black uppercase leading-[0.95] tracking-[-0.02em] text-[#102a43]">
+                  {story.title}
+                </h3>
+                {story.snippet ? <p className="mt-3 text-sm leading-6 text-[#526d82]">{story.snippet}</p> : null}
+                <div className="mt-4 border-t border-[#d6eaf2] pt-3">
+                  {story.location ? (
+                    <p className="font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#64748b]">{story.location}</p>
+                  ) : null}
+                  <a
+                    href={story.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="article-read-button mt-2"
+                  >
+                    READ ARTICLE <ArrowRight className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="cost" className="relative overflow-hidden bg-white px-4 pb-24 pt-4 sm:px-6 lg:px-8">
+        <div className="relative mx-auto max-w-7xl">
+          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+            <div>
+              <h2 className="headline-section mt-3">
+                That <span className="flush-accent-word">repair</span> money could be doing something{" "}
+                <span className="flush-accent-word">better.</span>
+              </h2>
+              <p className="mt-6 text-lg leading-8 text-[#334e68]">
+                Every preventable clog pulls public money into emergency response, equipment repair, hauling, overtime, and replacement parts. That is money that could support better infrastructure, safer facilities, parks, roads, schools, shoreline protection, or community programs.
+              </p>
+            </div>
+            <div className="overflow-hidden border border-[#cdeaf5] bg-transparent p-0 shadow-none">
+              <div className="relative aspect-[16/10] overflow-hidden border border-[#d6eaf2] bg-transparent">
+                {uniqueCostSectionArticles.map((article, index) => (
+                  <a
+                    key={article.url}
+                    href={article.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`absolute inset-0 flex h-full w-full flex-col justify-between bg-[#1b3b5d] p-5 text-white transition-opacity duration-1000 ${index === costSlideIndex ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                    aria-label={`${article.title}. Opens source from ${article.source} in a new tab.`}
+                  >
+                    <div>
+                      <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#bfe4f5]">{article.category}</p>
+                      <h3 className="mt-3 max-w-xl font-display text-3xl font-black uppercase leading-[0.9] tracking-[-0.02em] text-white">
+                        {article.title}
+                      </h3>
+                      <p className="mt-4 max-w-xl text-sm leading-6 text-white/90">{article.blurb}</p>
+                    </div>
+                    <div className="inline-flex items-center justify-between border-t border-white/30 pt-3 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#dbeef7]">
+                      <span>Source: {article.source}</span>
+                      <span className="inline-flex items-center gap-1 rounded-md border border-white/40 bg-[#0f2a46] px-2 py-1 text-white">
+                        READ ARTICLE <ArrowRight className="h-3.5 w-3.5" />
+                      </span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+              <div className="mt-3">
+                <p className="border-l-4 border-[#2c5e9e] pl-4 text-sm leading-6 text-[#526d82]">
+                  This is the point of the ick factor: the toilet is not a trash chute. What gets flushed becomes worker labor, equipment wear, hauled debris, public cost, and shoreline strain.
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section className="bg-white px-4 py-8 sm:px-6 lg:px-8" aria-label="Sponsor placement after education block">
+        <div className="ad-placement mx-auto max-w-7xl">
+          <div>
+            <p className="ad-placement-label">{adPlacements.awareness.label}</p>
+            <h2>{adPlacements.awareness.title}</h2>
+            <p>{adPlacements.awareness.copy}</p>
+          </div>
+          <div className="ad-placement-slot">
+            <span>{adPlacements.awareness.slot}</span>
+            <a href="mailto:sponsor@flushreport.live">Become a sponsor</a>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-[#cdeaf5] bg-[#f8fbff] px-4 py-6 sm:px-6 lg:px-8" aria-label="Daily visual reminder">
+        <div className="mx-auto max-w-7xl">
+          <div className="overflow-hidden">
+            <div className="ick-ticker-track">
+              {[...thinkBeforeImages, ...thinkBeforeImages].map((image, index) => (
+                <figure key={`bottom-${image.src}-${index}`} className="ick-ticker-item relative">
+                  <img src={image.src} alt={image.alt} className="h-48 w-52 object-cover sm:h-56 sm:w-60" />
+                </figure>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white px-4 py-8 sm:px-6 lg:px-8" aria-label="Sponsor placement between evidence and action">
+        <div className="ad-placement mx-auto max-w-7xl">
+          <div>
+            <p className="ad-placement-label">{adPlacements.field.label}</p>
+            <h2>{adPlacements.field.title}</h2>
+            <p>{adPlacements.field.copy}</p>
+          </div>
+          <div className="ad-placement-slot">
+            <span>{adPlacements.field.slot}</span>
+            <a href="mailto:sponsor@flushreport.live">Partner with us</a>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white px-4 py-12 sm:px-6 lg:px-8" aria-label="Take action and contact your representative">
+        <div className="news-card mx-auto max-w-7xl p-7 sm:p-10">
+          <p className="eyebrow">Take action</p>
+          <h2 className="headline-section mt-3">Contact your representative</h2>
+          <p className="mt-5 max-w-4xl text-base leading-7 text-[#526d82]">
+            Find your local and state representatives and tell them to support flushable wipes labeling laws. It takes five minutes.
+          </p>
+          <form
+            className="mt-6 flex flex-col gap-3 sm:max-w-xl sm:flex-row"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleRepresentativeLookup();
+            }}
+          >
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="postal-code"
+              placeholder="Enter your ZIP code"
+              className="field-input mt-0 sm:flex-1"
+              aria-label="Enter your ZIP code"
+              value={zipCodeInput}
+              onChange={(event) => setZipCodeInput(event.target.value)}
+            />
+            <button
+              type="submit"
+              className="inline-flex h-12 items-center justify-center rounded-xl border border-[#6f95c4] bg-[#0f2a46] px-5 font-mono text-[11px] font-black uppercase tracking-[0.16em] text-white transition hover:bg-[#184166]"
+              disabled={isRepLookupLoading}
+            >
+              {isRepLookupLoading ? "Loading..." : "Find my rep"}
+            </button>
+          </form>
+          {repLookupError ? (
+            <p className="mt-3 font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-[#f87171]">{repLookupError}</p>
+          ) : null}
+          {repLookupUpdatedAt ? (
+            <p className="mt-3 font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-[#64748b]">
+              Live lookup refreshed {new Date(repLookupUpdatedAt).toLocaleString("en-US")}
+            </p>
+          ) : null}
+          {isAmbiguousZipLookup ? (
+            <p className="mt-2 text-sm leading-6 text-[#526d82]">
+              Your ZIP code spans multiple districts. Verify your street address for exact House representation.
+            </p>
+          ) : null}
+          {representatives.length > 0 ? (
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              {representatives.map((rep) => (
+                <article key={rep.id} className="rounded-xl border border-[#d6eaf2] bg-[#0f2a46] p-4 text-white">
+                  <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#bfe4f5]">
+                    {rep.chamber === "senate" ? "U.S. Senate" : `U.S. House · District ${rep.district ?? "Unknown"}`}
+                  </p>
+                  <h3 className="mt-2 font-display text-2xl font-black uppercase leading-[0.95] tracking-[-0.02em]">
+                    {rep.firstName} {rep.lastName}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-white/90">
+                    {rep.party} · {rep.state} · {formatTermEnd(rep.termEnd)}
+                  </p>
+                  {rep.phone ? <p className="mt-3 font-mono text-[11px] font-semibold uppercase tracking-[0.08em]">Phone: {rep.phone}</p> : null}
+                  {rep.office ? <p className="mt-2 text-sm leading-6 text-white/80">{rep.office}</p> : null}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {rep.website ? (
+                      <a
+                        href={rep.website}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="article-read-button"
+                      >
+                        Website <ArrowRight className="h-3.5 w-3.5" />
+                      </a>
+                    ) : null}
+                    {rep.contactForm ? (
+                      <a
+                        href={rep.contactForm}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="article-read-button"
+                      >
+                        Contact <ArrowRight className="h-3.5 w-3.5" />
+                      </a>
+                    ) : null}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
+          <div className="mt-4 flex flex-wrap gap-2 text-sm text-[#526d82]">
+            <a
+              href="https://www.house.gov/representatives/find-your-representative"
+              target="_blank"
+              rel="noreferrer"
+              className="article-read-button"
+            >
+              Official House lookup <ArrowRight className="h-3.5 w-3.5" />
+            </a>
+            <a
+              href="https://www.senate.gov/senators/senators-contact.htm"
+              target="_blank"
+              rel="noreferrer"
+              className="article-read-button"
+            >
+              Official Senate directory <ArrowRight className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white px-4 py-8 sm:px-6 lg:px-8" aria-label="Sponsor placement after take action">
+        <div className="ad-placement mx-auto max-w-7xl">
+          <div>
+            <p className="ad-placement-label">{adPlacements.community.label}</p>
+            <h2>{adPlacements.community.title}</h2>
+            <p>{adPlacements.community.copy}</p>
+          </div>
+          <div className="ad-placement-slot">
+            <span>{adPlacements.community.slot}</span>
+            <a href="mailto:sponsor@flushreport.live">Get in touch</a>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white px-4 py-8 sm:px-6 lg:px-8" aria-label="Closing sponsor placement before footer">
+        <div className="ad-placement mx-auto max-w-7xl">
+          <div>
+            <p className="ad-placement-label">{adPlacements.closing.label}</p>
+            <h2>{adPlacements.closing.title}</h2>
+            <p>{adPlacements.closing.copy}</p>
+          </div>
+          <div className="ad-placement-slot">
+            <span>{adPlacements.closing.slot}</span>
+            <a href="mailto:sponsor@flushreport.live">Sponsor this space</a>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-[#cdeaf5] bg-white px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-5 text-center">
+          <p className="font-display text-2xl font-black uppercase tracking-[0.08em] text-[#102a43]">
+            The <span className="flush-accent-word">Flush</span> Report
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-4 font-mono text-[11px] font-black uppercase tracking-[0.14em] text-[#64748b]">
+            <a href="/privacy" className="hover:text-[#0b6fa4]">Privacy Policy</a>
+            <span aria-hidden="true">·</span>
+            <a href="/terms" className="hover:text-[#0b6fa4]">Terms &amp; Conditions</a>
+            <span aria-hidden="true">·</span>
+            <a href="/contact" className="hover:text-[#0b6fa4]">Contact</a>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-3" aria-label="Flush Report social links">
+            {socialApps.map((app) => (
+              <a
+                key={`footer-${app.label}`}
+                href={
+                  app.key === "instagram"
+                    ? "https://www.instagram.com"
+                    : app.key === "tiktok"
+                      ? "https://www.tiktok.com"
+                      : app.key === "facebook"
+                        ? "https://www.facebook.com"
+                        : app.key === "youtube"
+                          ? "https://www.youtube.com"
+                          : app.key === "x"
+                            ? "https://x.com"
+                            : "https://www.threads.net"
+                }
+                target="_blank"
+                rel="noreferrer"
+                className={`social-icon social-icon-${app.key}`}
+                aria-label={`Visit ${app.label}`}
+                title={app.label}
+              >
+                <app.Icon />
+              </a>
+            ))}
+          </div>
+        </div>
+      </footer>
+    </main>
+  );
+}
