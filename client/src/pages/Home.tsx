@@ -30,13 +30,16 @@ import {
 import {
   DailyCostSignal,
   DailyNewsStory,
+  clearScrapeCaches,
   fallbackCostSignals,
   fallbackDailyStories,
   fallbackWildlifeImpactStories,
+  getScrapeStatusSnapshot,
   isUsOnlyStory,
   loadDailyCostSignals,
   loadDailyWastewaterStories,
   loadWeeklyWildlifeImpactStories,
+  runScrapeDiagnostics,
   WildlifeImpactStory,
 } from "@/lib/dailyNews";
 import { lookupRepresentativesByZip, type Representative } from "@/lib/representatives";
@@ -46,12 +49,12 @@ const defaultTickerStories = fallbackDailyStories.slice(0, 5).map((story) => ({
 }));
 
 const timeZoneOptions = [
-  { label: "Hilo", value: "Pacific/Honolulu" },
-  { label: "Los Angeles", value: "America/Los_Angeles" },
-  { label: "Denver", value: "America/Denver" },
-  { label: "Chicago", value: "America/Chicago" },
-  { label: "New York", value: "America/New_York" },
-  { label: "UTC", value: "UTC" },
+  { label: "Hawaii-Aleutian", value: "Pacific/Honolulu" },
+  { label: "Alaska", value: "America/Anchorage" },
+  { label: "Pacific", value: "America/Los_Angeles" },
+  { label: "Mountain", value: "America/Denver" },
+  { label: "Central", value: "America/Chicago" },
+  { label: "Eastern", value: "America/New_York" },
 ];
 
 const featurePills = [
@@ -136,6 +139,16 @@ const thinkBeforeImages = [
   { src: "/think-before/13.png", alt: "Dark fibrous blockage with cable in runoff" },
   { src: "/think-before/14.png", alt: "Large pale clog pile removed from trench" },
   { src: "/think-before/15.png", alt: "Truck bin full of extracted wipes and sludge" },
+];
+
+const costSlideshowImages = [
+  { src: "/cost-slideshow/01.png", alt: "Wipe debris pulled from a wastewater pump intake" },
+  { src: "/cost-slideshow/02.png", alt: "Large wipe mass dropping into a wastewater disposal bin" },
+  { src: "/cost-slideshow/03.png", alt: "Compressed block of flushed wipe debris collected at treatment operations" },
+  { src: "/cost-slideshow/04.png", alt: "Pump housing opened to reveal flushable wipe clog buildup" },
+  { src: "/cost-slideshow/05.png", alt: "Industrial pump chamber packed with wet wipe debris" },
+  { src: "/cost-slideshow/06.png", alt: "Rows of treatment screens overloaded with wipe debris and strands" },
+  { src: "/cost-slideshow/07.png", alt: "Large dark rope-like wipe clog removed from wastewater equipment" },
 ];
 
 const impactStats = [
@@ -258,6 +271,16 @@ const flowSteps = [
   },
 ];
 
+type CostSectionArticle = {
+  category: string;
+  title: string;
+  source: string;
+  sourceUrl?: string;
+  blurb: string;
+  url: string;
+  costAmount: string;
+};
+
 const HERO_WARNING_FALLBACK =
   fallbackDailyStories.find((story) => /warning|alert|flushable wipes|wipes|do not flush/i.test(`${story.category} ${story.title} ${story.summary}`)) ??
   fallbackDailyStories[0];
@@ -269,6 +292,66 @@ function pickHeroWarningStory(stories: DailyNewsStory[]): DailyNewsStory {
     ),
   );
   return byRiskSignal ?? HERO_WARNING_FALLBACK;
+}
+
+function toCostSectionArticles(stories: DailyNewsStory[]): CostSectionArticle[] {
+  const extractCostAmount = (text: string): string | null => {
+    const dollarMatch = text.match(/\$\s?\d[\d,]*(?:\.\d+)?\s?(?:[KMBT]|million|billion|thousand)?(?:\/yr|\/year)?/i);
+    if (dollarMatch) {
+      return dollarMatch[0]
+        .replace(/\s+/g, "")
+        .replace(/million/i, "M")
+        .replace(/billion/i, "B")
+        .replace(/thousand/i, "K");
+    }
+    const scaledMatch = text.match(/\b(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s?(million|billion|thousand)\b/i);
+    if (scaledMatch) {
+      const suffix = scaledMatch[2].toLowerCase().startsWith("million")
+        ? "M"
+        : scaledMatch[2].toLowerCase().startsWith("billion")
+          ? "B"
+          : "K";
+      return `$${scaledMatch[1]}${suffix}`;
+    }
+    return null;
+  };
+
+  const hasDollarSignal = (text: string) =>
+    /\$\s?\d[\d,]*(?:\.\d+)?|\b\d+(?:\.\d+)?\s?(million|billion|thousand|m|b|k)\b/i.test(text);
+
+  const costRepairScore = (story: DailyNewsStory): number => {
+    const haystack = `${story.title} ${story.summary} ${story.category} ${story.location}`;
+    let score = 0;
+
+    if (hasDollarSignal(haystack)) score += 5;
+    if (/(cost|costly|expense|expensive|repair|repairs|replacement|maintenance|overtime|budget|funding|grant|ratepayer|taxpayer|burden|financial|money)/i.test(haystack)) score += 4;
+    if (/(pump|lift station|sewer line|infrastructure|damage|failure)/i.test(haystack)) score += 2;
+    if (/infrastructure money/i.test(story.category)) score += 2;
+
+    return score;
+  };
+
+  return stories
+    .map((story) => {
+      const costAmount = extractCostAmount(`${story.title} ${story.summary}`);
+      const score = costRepairScore(story) + (costAmount ? 8 : 0);
+      return { story, score, costAmount };
+    })
+    .filter((entry) => entry.score >= 8 && Boolean(entry.costAmount))
+    .sort((a, b) => b.score - a.score)
+    .map((entry) => ({
+      story: entry.story,
+      costAmount: entry.costAmount || "$—",
+    }))
+    .map(({ story, costAmount }) => ({
+      category: story.category,
+      title: story.title,
+      source: story.source,
+      sourceUrl: story.sourceUrl,
+      blurb: story.summary || "Source-backed reporting on flushable-wipes system and cost impacts.",
+      url: story.url,
+      costAmount,
+    }));
 }
 
 function ensureSentence(value: string): string {
@@ -287,41 +370,51 @@ function sourceLogoUrl(sourceUrl?: string): string | null {
   }
 }
 
-const costSectionArticles = [
+const fallbackCostSectionArticles: CostSectionArticle[] = [
   {
     category: "Utility warning",
     title: "City warns 'flushable' wipes are causing sewer damage and taxpayer costs",
     source: "City of Lennox",
+    sourceUrl: "https://www.cityoflennoxsd.com",
     blurb: "A local utility warning that directly ties wipe misuse to repairs and ratepayer burden.",
     url: "https://www.cityoflennoxsd.com/article/2816312",
+    costAmount: "$25K-$60K",
   },
   {
     category: "Operations alert",
     title: "Public utilities report wipes clogging mains, lift stations, and pumps",
     source: "Great Bend Public Utilities",
+    sourceUrl: "https://www.greatbendks.net",
     blurb: "Explains how crews repeatedly deal with avoidable blockages across core wastewater infrastructure.",
     url: "https://www.greatbendks.net/CivicAlerts.aspx?AID=377",
+    costAmount: "$50K+",
   },
   {
     category: "Cost signal",
     title: "Flushing wipes adds major maintenance and sewer cleaning costs",
     source: "Lockport coverage",
+    sourceUrl: "https://www.yahoo.com",
     blurb: "Documents real budget impacts connected to persistent wipe-related system jams.",
     url: "https://www.yahoo.com/news/articles/flushing-wet-wipes-costs-town-131600152.html",
+    costAmount: "$130K+",
   },
   {
     category: "Industry research",
     title: "Executive summary: annual utility burden from flushable wipes",
     source: "NACWA",
+    sourceUrl: "https://www.nacwa.org",
     blurb: "High-impact utility data showing recurring national cost pressure from wipe disposal behavior.",
     url: "https://www.nacwa.org/docs/default-source/resources---public/executive-summary_cost_of_wipes.pdf",
+    costAmount: "$441M/yr",
   },
   {
     category: "Legislation",
     title: "Senate advances 'Do Not Flush' wipe labeling legislation",
     source: "CASA",
+    sourceUrl: "https://casaweb.org",
     blurb: "Tracks policy response to widespread cleanup, maintenance, and education costs.",
     url: "https://casaweb.org/federal-legislative-update-4-13-26/",
+    costAmount: "$441M/yr",
   },
 ];
 
@@ -382,6 +475,7 @@ function formatTermEnd(value: string | null): string {
 
 export default function Home() {
   const [costSlideIndex, setCostSlideIndex] = useState(0);
+  const [costPhotoSlideIndex, setCostPhotoSlideIndex] = useState(0);
   const [thinkSlideIndex, setThinkSlideIndex] = useState(0);
   const [heroStoryIndex, setHeroStoryIndex] = useState(0);
   const [tickerStories, setTickerStories] = useState(defaultTickerStories);
@@ -419,10 +513,15 @@ export default function Home() {
     const costSignalsFill = dedupeWithinSection(fallbackCostSignals).slice(0, Math.max(0, 3 - costSignalsPrimary.length));
     const costSignals = [...costSignalsPrimary, ...costSignalsFill];
 
-    const costArticles = dedupeWithinSection(
-      costSectionArticles.filter((article) => isUsOnlyStory(article.title, article.blurb, "United States")),
+    const scrapedCostArticles = dedupeWithinSection(toCostSectionArticles(tickerStories));
+    const fallbackCostArticles = dedupeWithinSection(
+      fallbackCostSectionArticles.filter((article) => isUsOnlyStory(article.title, article.blurb, "United States")),
     );
-    const ensuredCostArticles = costArticles.length > 0 ? costArticles : costSectionArticles.slice(0, 1);
+    const combinedCostArticles = [
+      ...scrapedCostArticles,
+      ...fallbackCostArticles.filter((article) => !scrapedCostArticles.some((scraped) => scraped.url === article.url)),
+    ];
+    const ensuredCostArticles = combinedCostArticles.length > 0 ? combinedCostArticles : fallbackCostSectionArticles.slice(0, 1);
 
     return {
       uniqueTickerStories: ticker.length > 0 ? ticker : defaultTickerStories,
@@ -444,7 +543,7 @@ export default function Home() {
 
     const timer = window.setInterval(() => {
       setCostSlideIndex((index) => (index + 1) % costArticleCount);
-    }, 4200);
+    }, 10000);
 
     return () => window.clearInterval(timer);
   }, [costArticleCount]);
@@ -452,6 +551,14 @@ export default function Home() {
   useEffect(() => {
     setCostSlideIndex(0);
   }, [costArticleCount]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setCostPhotoSlideIndex((index) => (index + 1) % costSlideshowImages.length);
+    }, 3000);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -476,11 +583,24 @@ export default function Home() {
   }, [uniqueTickerStories.length]);
 
   useEffect(() => {
+    (window as Window & {
+      __flushReportScrape?: {
+        getStatus: typeof getScrapeStatusSnapshot;
+        clearCaches: typeof clearScrapeCaches;
+        runLiveCheck: typeof runScrapeDiagnostics;
+      };
+    }).__flushReportScrape = {
+      getStatus: getScrapeStatusSnapshot,
+      clearCaches: clearScrapeCaches,
+      runLiveCheck: runScrapeDiagnostics,
+    };
+
     let active = true;
 
     loadDailyWastewaterStories().then((stories) => {
       if (!active) return;
-      setTickerStories(stories.slice(0, 6));
+      setTickerStories(stories);
+      console.info("[Flush Report] scrape status", getScrapeStatusSnapshot());
     });
 
     return () => {
@@ -514,6 +634,7 @@ export default function Home() {
     loadWeeklyWildlifeImpactStories().then((stories) => {
       if (!active) return;
       setWildlifeImpactStories(stories);
+      console.info("[Flush Report] scrape status", getScrapeStatusSnapshot());
     });
 
     return () => {
@@ -527,6 +648,7 @@ export default function Home() {
     loadDailyCostSignals().then((signals) => {
       if (!active) return;
       setDailyCostSignals(signals);
+      console.info("[Flush Report] scrape status", getScrapeStatusSnapshot());
     });
 
     return () => {
@@ -666,9 +788,20 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="bg-white px-4 pb-4 pt-2 sm:px-6 lg:px-8" aria-label="Think Before You Flush message">
+        <div className="mx-auto max-w-7xl">
+          <p className="max-w-6xl text-xl leading-8 text-[#334e68] sm:text-2xl">
+            The Flush Report is a movement focused on educating the general public and, more importantly, the youth about the major problems that flushing anything other than pee, poop, and toilet paper can cause. The rise in the use of flushable wipes continues to be one of the leading causes of wastewater and collection system failures here in Hawaii, the United States, and across the globe. So much so that states have enacted laws to label, ban, and enforce flushable wipes that destroy wastewater systems.
+          </p>
+          <p className="mt-5 max-w-6xl text-xl leading-8 text-[#334e68] sm:text-2xl">
+            The Flush Report encourages all to think before you flush. All wastewater systems discharge into a local waterway. Whether a stream, river, or ocean coastline, we ALL feed these waterways every day with what we flush.
+          </p>
+        </div>
+      </section>
+
       <section id="mission" className="relative border-y border-[#cdeaf5] bg-white px-4 py-8 sm:px-6 lg:px-8">
         <div className="w-full">
-          <h2 className="mt-3 font-display text-[clamp(3.2rem,9.5vw,8.7rem)] font-black uppercase leading-[0.8] tracking-[-0.072em] text-[#102a43]">
+          <h2 className="mt-3 font-display text-[clamp(2.85rem,8.2vw,7.8rem)] font-black uppercase leading-[0.8] tracking-[-0.072em] text-[#102a43]">
             From <span className="flush-accent-word">Flush</span> to Fish.
           </h2>
           <p className="mt-6 max-w-6xl text-xl leading-8 text-[#334e68] sm:text-2xl">
@@ -770,7 +903,7 @@ export default function Home() {
 
       <section id="cost" className="relative overflow-hidden bg-white px-4 pb-24 pt-4 sm:px-6 lg:px-8">
         <div className="relative mx-auto max-w-7xl">
-          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
             <div>
               <h2 className="headline-section mt-3">
                 That <span className="flush-accent-word">repair</span> money could be doing something{" "}
@@ -780,23 +913,53 @@ export default function Home() {
                 Every preventable clog pulls public money into emergency response, equipment repair, hauling, overtime, and replacement parts. That is money that could support better infrastructure, safer facilities, parks, roads, schools, shoreline protection, or community programs.
               </p>
             </div>
-            <div className="overflow-hidden border border-[#cdeaf5] bg-transparent p-0 shadow-none">
-              <div className="relative aspect-[16/10] overflow-hidden border border-[#d6eaf2] bg-transparent">
+            <div className="flex h-full flex-col justify-end gap-3 lg:items-end">
+              <div className="relative aspect-[16/8] w-full max-w-[40rem] overflow-hidden rounded-[0.95rem] border border-[#d6eaf2] bg-[#0f2a46]">
+                {costSlideshowImages.map((image, index) => (
+                  <img
+                    key={image.src}
+                    src={image.src}
+                    alt={image.alt}
+                    className={`absolute inset-0 h-full w-full object-contain object-center transition-opacity duration-1000 ${index === costPhotoSlideIndex ? "opacity-100" : "opacity-0"}`}
+                  />
+                ))}
+              </div>
+              <div className="relative min-h-[12.25rem] w-full max-w-[40rem] overflow-hidden rounded-[0.95rem] border border-[#d6eaf2] bg-transparent">
                 {uniqueCostSectionArticles.map((article, index) => (
                   <a
                     key={article.url}
                     href={article.url}
                     target="_blank"
                     rel="noreferrer"
-                    className={`absolute inset-0 flex h-full w-full flex-col justify-between bg-[#1b3b5d] p-5 text-white transition-opacity duration-1000 ${index === costSlideIndex ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                    className={`absolute inset-0 flex h-full w-full flex-col justify-between bg-[#1b3b5d] p-4 text-white transition-opacity duration-1000 ${index === costSlideIndex ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                     aria-label={`${article.title}. Opens source from ${article.source} in a new tab.`}
                   >
                     <div>
-                      <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#bfe4f5]">{article.category}</p>
-                      <h3 className="mt-3 max-w-xl font-display text-3xl font-black uppercase leading-[0.9] tracking-[-0.02em] text-white">
-                        {article.title}
-                      </h3>
-                      <p className="mt-4 max-w-xl text-sm leading-6 text-white/90">{article.blurb}</p>
+                      <div className="relative">
+                        <span className="absolute right-0 top-0 font-display text-3xl font-black uppercase leading-none tracking-[-0.02em] text-[#87ceeb]">
+                          {article.costAmount}
+                        </span>
+                        <div className="flex items-start gap-2 pr-28">
+                          {sourceLogoUrl(article.sourceUrl) ? (
+                            <img
+                              src={sourceLogoUrl(article.sourceUrl) || ""}
+                              alt={`${article.source} logo`}
+                              className="mt-1 h-8 w-8 shrink-0 rounded border border-white/35 bg-white object-contain p-1"
+                              loading="lazy"
+                              onError={(event) => {
+                                event.currentTarget.style.display = "none";
+                              }}
+                            />
+                          ) : null}
+                          <div>
+                            <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#bfe4f5]">{article.category}</p>
+                            <h3 className="mt-2 max-w-xl font-display text-2xl font-black uppercase leading-[0.92] tracking-[-0.02em] text-white">
+                              {article.title}
+                            </h3>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="mt-3 max-w-xl text-sm leading-6 text-white/90">{article.blurb}</p>
                     </div>
                     <div className="inline-flex items-center justify-between border-t border-white/30 pt-3 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#dbeef7]">
                       <span>Source: {article.source}</span>
@@ -806,11 +969,6 @@ export default function Home() {
                     </div>
                   </a>
                 ))}
-              </div>
-              <div className="mt-3">
-                <p className="border-l-4 border-[#2c5e9e] pl-4 text-sm leading-6 text-[#526d82]">
-                  This is the point of the ick factor: the toilet is not a trash chute. What gets flushed becomes worker labor, equipment wear, hauled debris, public cost, and shoreline strain.
-                </p>
               </div>
             </div>
           </div>

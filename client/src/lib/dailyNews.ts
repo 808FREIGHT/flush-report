@@ -36,10 +36,105 @@ export type WildlifeImpactStory = {
 const CACHE_KEY = "flush-report-daily-news-v6";
 const WILDLIFE_CACHE_KEY = "flush-report-weekly-wildlife-archive-v4";
 const OG_IMAGE_CACHE_KEY = "flush-report-og-image-cache-v1";
-const CACHE_TTL_DAY = () => new Date().toISOString().slice(0, 10);
+const SCRAPE_STATUS_KEY = "flush-report-scrape-status-v1";
+const ACCESS_CHECK_CACHE_KEY = "flush-report-article-access-cache-v1";
 const NEWS_LIMIT = 18;
 export const SITE_REGION_LOCK = "US_ONLY";
 const MIN_WEEKLY_WILDLIFE_STORIES = 3;
+const DAILY_SCRAPE_CUTOFF_HOUR = 8;
+const DAILY_SCRAPE_CUTOFF_MINUTE = 30;
+
+type ScrapeSource = "live" | "cache" | "fallback";
+type ScrapeTarget = "dailyStories" | "weeklyWildlife" | "dailyCostSignals";
+
+export type ScrapeStatusRecord = {
+  target: ScrapeTarget;
+  interval: "daily" | "weekly" | "derived-daily";
+  source: ScrapeSource;
+  itemCount: number;
+  intervalKey: string;
+  lastAttemptAt: string;
+  lastSuccessAt?: string;
+  lastFailureAt?: string;
+  note?: string;
+};
+
+type AccessCheckCache = Record<
+  string,
+  {
+    day: string;
+    accessible: boolean;
+    checkedAt: string;
+    reason?: string;
+  }
+>;
+
+function resolvedUserTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
+
+function localDateTimePartsForZone(date: Date, timeZone: string): {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+} {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+  const parts = formatter.formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value || "0");
+  return {
+    year: get("year"),
+    month: get("month"),
+    day: get("day"),
+    hour: get("hour"),
+    minute: get("minute"),
+  };
+}
+
+function shiftDateByDays(year: number, month: number, day: number, deltaDays: number): {
+  year: number;
+  month: number;
+  day: number;
+} {
+  const shifted = new Date(Date.UTC(year, month - 1, day + deltaDays));
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+  };
+}
+
+function pad2(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function dailyScrapeCycleKey(timeZone = resolvedUserTimeZone()): string {
+  const now = new Date();
+  const local = localDateTimePartsForZone(now, timeZone);
+  const isBeforeCutoff =
+    local.hour < DAILY_SCRAPE_CUTOFF_HOUR ||
+    (local.hour === DAILY_SCRAPE_CUTOFF_HOUR && local.minute < DAILY_SCRAPE_CUTOFF_MINUTE);
+
+  const cycleDate = isBeforeCutoff
+    ? shiftDateByDays(local.year, local.month, local.day, -1)
+    : { year: local.year, month: local.month, day: local.day };
+
+  return `${cycleDate.year}-${pad2(cycleDate.month)}-${pad2(cycleDate.day)}@${timeZone}`;
+}
 
 type NewsLane = {
   category: string;
@@ -86,6 +181,121 @@ const newsLanes: NewsLane[] = [
     minItems: 3,
   },
 ];
+
+function readScrapeStatusMap(): Partial<Record<ScrapeTarget, ScrapeStatusRecord>> {
+  try {
+    const raw = localStorage.getItem(SCRAPE_STATUS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Partial<Record<ScrapeTarget, ScrapeStatusRecord>>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeScrapeStatusMap(statusMap: Partial<Record<ScrapeTarget, ScrapeStatusRecord>>): void {
+  try {
+    localStorage.setItem(SCRAPE_STATUS_KEY, JSON.stringify(statusMap));
+  } catch {
+    // Ignore diagnostics persistence failures.
+  }
+}
+
+function updateScrapeStatus(
+  target: ScrapeTarget,
+  next: Omit<ScrapeStatusRecord, "target">,
+): void {
+  const statusMap = readScrapeStatusMap();
+  statusMap[target] = { target, ...next };
+  writeScrapeStatusMap(statusMap);
+}
+
+export function getScrapeStatusSnapshot(): Partial<Record<ScrapeTarget, ScrapeStatusRecord>> {
+  return readScrapeStatusMap();
+}
+
+function readAccessCheckCache(): AccessCheckCache {
+  try {
+    const raw = localStorage.getItem(ACCESS_CHECK_CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as AccessCheckCache;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeAccessCheckCache(cache: AccessCheckCache): void {
+  try {
+    localStorage.setItem(ACCESS_CHECK_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Ignore cache write failures.
+  }
+}
+
+const accessDeniedPatterns = [
+  /access denied/i,
+  /\b403\b/,
+  /forbidden/i,
+  /request blocked/i,
+  /captcha/i,
+  /permission denied/i,
+  /not authorized/i,
+];
+
+async function checkArticleUrlAccessible(url: string): Promise<{ accessible: boolean; reason?: string }> {
+  if (!isHttpUrl(url)) return { accessible: false, reason: "invalid_url" };
+
+  const day = dailyScrapeCycleKey();
+  const cache = readAccessCheckCache();
+  const cached = cache[url];
+  if (cached && cached.day === day) {
+    return { accessible: cached.accessible, reason: cached.reason };
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 8000);
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl, { signal: controller.signal });
+    window.clearTimeout(timeout);
+
+    if (!response.ok) {
+      const reason = `http_${response.status}`;
+      cache[url] = { day, accessible: false, checkedAt: new Date().toISOString(), reason };
+      writeAccessCheckCache(cache);
+      return { accessible: false, reason };
+    }
+
+    const text = (await response.text()).slice(0, 2500);
+    const denied = accessDeniedPatterns.some((pattern) => pattern.test(text));
+    const accessible = !denied;
+    const reason = accessible ? "ok" : "access_denied_marker";
+    cache[url] = { day, accessible, checkedAt: new Date().toISOString(), reason };
+    writeAccessCheckCache(cache);
+    return { accessible, reason };
+  } catch {
+    cache[url] = { day, accessible: false, checkedAt: new Date().toISOString(), reason: "fetch_error" };
+    writeAccessCheckCache(cache);
+    return { accessible: false, reason: "fetch_error" };
+  }
+}
+
+async function filterAccessibleByUrl<T extends { url: string }>(items: T[]): Promise<T[]> {
+  if (items.length === 0) return [];
+  const checks = await Promise.all(items.map((item) => checkArticleUrlAccessible(item.url)));
+  return items.filter((_item, index) => checks[index]?.accessible);
+}
+
+export function clearScrapeCaches(): void {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(WILDLIFE_CACHE_KEY);
+    localStorage.removeItem(ACCESS_CHECK_CACHE_KEY);
+  } catch {
+    // Ignore cache clear failures.
+  }
+}
 
 export const fallbackDailyStories: DailyNewsStory[] = [
   {
@@ -453,11 +663,12 @@ function curateByLane(stories: DailyNewsStory[]): DailyNewsStory[] {
 }
 
 function readCache(): DailyNewsStory[] | null {
+  const dayKey = dailyScrapeCycleKey();
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as { day: string; items: DailyNewsStory[] };
-    if (parsed.day !== CACHE_TTL_DAY() || !Array.isArray(parsed.items) || parsed.items.length === 0) return null;
+    if (parsed.day !== dayKey || !Array.isArray(parsed.items) || parsed.items.length === 0) return null;
     return parsed.items;
   } catch {
     return null;
@@ -465,8 +676,9 @@ function readCache(): DailyNewsStory[] | null {
 }
 
 function writeCache(items: DailyNewsStory[]): void {
+  const dayKey = dailyScrapeCycleKey();
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ day: CACHE_TTL_DAY(), items }));
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ day: dayKey, items }));
   } catch {
     // Ignore cache write failures.
   }
@@ -586,9 +798,22 @@ export async function loadOgImageMap(articleUrls: string[]): Promise<Record<stri
   return result;
 }
 
-export async function loadDailyWastewaterStories(): Promise<DailyNewsStory[]> {
-  const cached = readCache();
-  if (cached) return cached;
+export async function loadDailyWastewaterStories(options: { forceLive?: boolean } = {}): Promise<DailyNewsStory[]> {
+  const nowIso = new Date().toISOString();
+  const dayKey = dailyScrapeCycleKey();
+  const cached = options.forceLive ? null : readCache();
+  if (cached) {
+    updateScrapeStatus("dailyStories", {
+      interval: "daily",
+      source: "cache",
+      itemCount: cached.length,
+      intervalKey: dayKey,
+      lastAttemptAt: nowIso,
+      lastSuccessAt: nowIso,
+      note: "Using same-day cached story scrape.",
+    });
+    return cached;
+  }
 
   try {
     const laneQueries = newsLanes.flatMap((lane) => lane.queries);
@@ -604,18 +829,53 @@ export async function loadDailyWastewaterStories(): Promise<DailyNewsStory[]> {
     const usOnlyStories = filtered.filter((item) => isUsOnlyStory(item.title, item.summary, item.location));
     const wipesOnlyStories = usOnlyStories.filter((item) => isFlushableWipesStory(item.title, item.summary, item.category));
     const topStories = curateByLane(wipesOnlyStories).sort((a, b) => toStoryTimestamp(b.date) - toStoryTimestamp(a.date));
-    if (topStories.length === 0) return fallbackDailyStories;
+    const accessibleTopStories = await filterAccessibleByUrl(topStories);
 
-    writeCache(topStories);
-    return topStories;
+    if (accessibleTopStories.length === 0) {
+      const accessibleFallback = await filterAccessibleByUrl(fallbackDailyStories);
+      updateScrapeStatus("dailyStories", {
+        interval: "daily",
+        source: "fallback",
+        itemCount: accessibleFallback.length,
+        intervalKey: dayKey,
+        lastAttemptAt: nowIso,
+        lastFailureAt: nowIso,
+        note: "Live scrape returned no accessible qualifying stories; serving accessible fallback.",
+      });
+      return accessibleFallback;
+    }
+
+    writeCache(accessibleTopStories);
+    updateScrapeStatus("dailyStories", {
+      interval: "daily",
+      source: "live",
+      itemCount: accessibleTopStories.length,
+      intervalKey: dayKey,
+      lastAttemptAt: nowIso,
+      lastSuccessAt: nowIso,
+      note: "Live scrape succeeded with accessible URLs and cache was refreshed.",
+    });
+    return accessibleTopStories;
   } catch {
-    return fallbackDailyStories;
+    const accessibleFallback = await filterAccessibleByUrl(fallbackDailyStories);
+    updateScrapeStatus("dailyStories", {
+      interval: "daily",
+      source: "fallback",
+      itemCount: accessibleFallback.length,
+      intervalKey: dayKey,
+      lastAttemptAt: nowIso,
+      lastFailureAt: nowIso,
+      note: "Live scrape request failed; serving accessible fallback.",
+    });
+    return accessibleFallback;
   }
 }
 
-export async function loadDailyCostSignals(): Promise<DailyCostSignal[]> {
+export async function loadDailyCostSignals(options: { forceLive?: boolean } = {}): Promise<DailyCostSignal[]> {
+  const nowIso = new Date().toISOString();
+  const dayKey = dailyScrapeCycleKey();
   try {
-    const stories = await loadDailyWastewaterStories();
+    const stories = await loadDailyWastewaterStories({ forceLive: options.forceLive });
 
     const pools = [
       {
@@ -660,15 +920,50 @@ export async function loadDailyCostSignals(): Promise<DailyCostSignal[]> {
       }
     }
 
-    return signals.length === 3 ? signals : fallbackCostSignals;
+    const finalSignals = signals.length === 3 ? signals : fallbackCostSignals;
+    updateScrapeStatus("dailyCostSignals", {
+      interval: "derived-daily",
+      source: finalSignals === fallbackCostSignals ? "fallback" : "live",
+      itemCount: finalSignals.length,
+      intervalKey: dayKey,
+      lastAttemptAt: nowIso,
+      ...(finalSignals === fallbackCostSignals ? { lastFailureAt: nowIso } : { lastSuccessAt: nowIso }),
+      note:
+        finalSignals === fallbackCostSignals
+          ? "Cost signal extraction fell back to defaults."
+          : "Cost signals extracted from scraped daily stories.",
+    });
+    return finalSignals;
   } catch {
+    updateScrapeStatus("dailyCostSignals", {
+      interval: "derived-daily",
+      source: "fallback",
+      itemCount: fallbackCostSignals.length,
+      intervalKey: dayKey,
+      lastAttemptAt: nowIso,
+      lastFailureAt: nowIso,
+      note: "Daily cost signal generation failed; serving fallback.",
+    });
     return fallbackCostSignals;
   }
 }
 
-export async function loadWeeklyWildlifeImpactStories(): Promise<WildlifeImpactStory[]> {
-  const cached = readWildlifeCache();
-  if (cached) return cached;
+export async function loadWeeklyWildlifeImpactStories(options: { forceLive?: boolean } = {}): Promise<WildlifeImpactStory[]> {
+  const nowIso = new Date().toISOString();
+  const currentWeekKey = weekCacheKey();
+  const cached = options.forceLive ? null : readWildlifeCache();
+  if (cached) {
+    updateScrapeStatus("weeklyWildlife", {
+      interval: "weekly",
+      source: "cache",
+      itemCount: cached.length,
+      intervalKey: currentWeekKey,
+      lastAttemptAt: nowIso,
+      lastSuccessAt: nowIso,
+      note: "Using same-week cached wildlife scrape.",
+    });
+    return cached;
+  }
 
   try {
     const wildlifeQueries = [
@@ -718,10 +1013,50 @@ export async function loadWeeklyWildlifeImpactStories(): Promise<WildlifeImpactS
       byUrl.set(item.url, item);
     }
     const finalStories = Array.from(byUrl.values()).slice(0, MIN_WEEKLY_WILDLIFE_STORIES);
+    const accessibleFinalStories = await filterAccessibleByUrl(finalStories);
 
-    writeWildlifeCache(finalStories);
-    return finalStories;
+    writeWildlifeCache(accessibleFinalStories);
+    updateScrapeStatus("weeklyWildlife", {
+      interval: "weekly",
+      source: "live",
+      itemCount: accessibleFinalStories.length,
+      intervalKey: currentWeekKey,
+      lastAttemptAt: nowIso,
+      lastSuccessAt: nowIso,
+      note: "Live weekly wildlife scrape succeeded with accessible URLs and cache was refreshed.",
+    });
+    return accessibleFinalStories;
   } catch {
-    return fallbackWildlifeImpactStories.slice(0, MIN_WEEKLY_WILDLIFE_STORIES);
+    const fallback = await filterAccessibleByUrl(
+      fallbackWildlifeImpactStories.slice(0, MIN_WEEKLY_WILDLIFE_STORIES),
+    );
+    updateScrapeStatus("weeklyWildlife", {
+      interval: "weekly",
+      source: "fallback",
+      itemCount: fallback.length,
+      intervalKey: currentWeekKey,
+      lastAttemptAt: nowIso,
+      lastFailureAt: nowIso,
+      note: "Weekly wildlife scrape request failed; serving fallback.",
+    });
+    return fallback;
   }
+}
+
+export async function runScrapeDiagnostics(): Promise<{
+  dailyStoryCount: number;
+  weeklyWildlifeCount: number;
+  dailyCostSignalCount: number;
+  status: Partial<Record<ScrapeTarget, ScrapeStatusRecord>>;
+}> {
+  const dailyStories = await loadDailyWastewaterStories({ forceLive: true });
+  const wildlifeStories = await loadWeeklyWildlifeImpactStories({ forceLive: true });
+  const costSignals = await loadDailyCostSignals({ forceLive: true });
+
+  return {
+    dailyStoryCount: dailyStories.length,
+    weeklyWildlifeCount: wildlifeStories.length,
+    dailyCostSignalCount: costSignals.length,
+    status: getScrapeStatusSnapshot(),
+  };
 }
