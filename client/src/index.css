@@ -53,6 +53,8 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
 }
 
 :root {
+  /* Earmarked Flush Report green. Daily News, live badge, sponsors, and submit all use this. */
+  --live-green: #39ff14;
   --radius: 0.85rem;
   --background: oklch(0.986 0.01 235);
   --foreground: oklch(0.27 0.035 250);
@@ -310,17 +312,17 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     font-weight: 900;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #39ff14;
+    color: var(--live-green);
   }
 
   .live-flash-text {
-    color: #39ff14;
+    color: var(--live-green);
     font-weight: 900;
     text-shadow: none;
   }
 
   .live-bolt {
-    color: #39ff14;
+    color: var(--live-green);
     text-shadow: none;
     font-size: 1.9rem;
     line-height: 1;
@@ -439,14 +441,58 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   .retro-news-logo__title {
     color: #f8fbff;
     font-family: "Arial Narrow", "Helvetica Neue Condensed", "Oswald", sans-serif;
-    font-size: 2.35rem;
+    font-size: clamp(1.05rem, 5.4vw, 1.55rem);
     font-weight: 900;
-    letter-spacing: 0.025em;
-    word-spacing: 0.12em;
+    letter-spacing: 0.01em;
+    word-spacing: 0.06em;
     line-height: 0.86;
     text-transform: uppercase;
     white-space: nowrap;
     text-shadow: none;
+  }
+
+  .site-header-spacer {
+    height: var(--site-header-height, 7.75rem);
+  }
+
+  @media (max-width: 639px) {
+    .retro-news-logo {
+      gap: 0.45rem;
+      min-width: 0;
+    }
+
+    .retro-news-logo__channel {
+      width: 2.15rem;
+      min-width: 2.15rem;
+      height: 2.7rem;
+    }
+  }
+
+  @media (min-width: 640px) {
+    .retro-news-logo__title {
+      font-size: clamp(1.7rem, 3.4vw, 2.15rem);
+      letter-spacing: 0.02em;
+      word-spacing: 0.1em;
+    }
+
+  }
+
+  @media (min-width: 1280px) {
+    .retro-news-logo {
+      gap: 0.68rem;
+    }
+
+    .retro-news-logo__channel {
+      width: 2.85rem;
+      min-width: 2.85rem;
+      height: 3.55rem;
+    }
+
+    .retro-news-logo__title {
+      font-size: 2.35rem;
+      letter-spacing: 0.025em;
+      word-spacing: 0.12em;
+    }
   }
 
   .ick-ticker-track {
@@ -455,7 +501,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     gap: 0.6rem;
     width: max-content;
     min-width: max-content;
-    animation: ick-ticker-scroll 95s linear infinite;
+    animation: ick-ticker-scroll 348s linear infinite;
   }
 
   .ick-ticker-item {
@@ -491,6 +537,186 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     background: #ffffff;
     box-shadow: 0 18px 42px rgba(11, 111, 164, 0.14);
     outline: none;
+  }
+
+  .quick-cards {
+    display: flex;
+    align-items: stretch;
+    gap: 0.65rem;
+    width: 100%;
+  }
+
+  .quick-cards .feature-pill {
+    border-radius: 0.7rem;
+    box-shadow: none;
+  }
+
+  .quick-cards .feature-pill:hover,
+  .quick-cards .feature-pill:focus-visible {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .feature-pill--daily {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    padding: 0.45rem 0.85rem 0.5rem;
+  }
+
+  .feature-pill--daily .feature-cta-action {
+    margin-top: 0.3rem;
+    padding: 0.22rem 0.5rem;
+    font-size: 0.66rem;
+  }
+
+  .feature-pill--daily .live-bolt--card {
+    font-size: 1rem;
+  }
+
+  .rag-pics-card {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0.15rem;
+    width: auto;
+    min-width: 0;
+    margin-left: 0;
+    overflow: visible;
+    padding: 0.45rem 0.85rem 0.5rem;
+  }
+
+  .rag-pics-sheet {
+    display: grid;
+    margin-bottom: 0.45rem;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 0.85rem;
+    background: #0f172a;
+  }
+
+  .rag-pics-sheet button,
+  .dark .rag-pics-sheet button {
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    background: transparent;
+    padding: 0.8rem 0.9rem;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-align: center;
+    text-transform: uppercase;
+    color: #ffffff !important;
+  }
+
+  .rag-pics-sheet button:last-child {
+    border-bottom: 0;
+  }
+
+  .rag-pics-count,
+  .dark .rag-pics-count {
+    margin: 0 0 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-align: center;
+    text-transform: uppercase;
+    color: #ffffff !important;
+  }
+
+  .rag-pics-headline {
+    margin: 0;
+  }
+
+  .rag-pics-actions {
+    margin-top: auto;
+    padding-top: 0.45rem;
+  }
+
+  .rag-pics-actions-row {
+    display: flex;
+    gap: 0.45rem;
+  }
+
+  .rag-pics-attach,
+  .rag-pics-send {
+    flex: 1 1 0;
+    min-width: 0;
+    border-radius: 0.65rem;
+    padding: 0.5rem 0.7rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .rag-pics-attach,
+  .dark .rag-pics-attach {
+    border: 1px solid #4d6d95;
+    background: #0f172a;
+    color: #ffffff !important;
+  }
+
+  .rag-pics-send {
+    border: 1px solid var(--live-green);
+    background: var(--live-green);
+    color: #102a43;
+  }
+
+  .dark .rag-pics-send,
+  .rag-pics-send {
+    color: #102a43 !important;
+  }
+
+  .rag-pics-note,
+  .dark .rag-pics-note {
+    margin-top: 0.55rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--live-green) !important;
+  }
+
+  .rag-pics-note--error,
+  .dark .rag-pics-note--error {
+    color: #ffb4b4 !important;
+  }
+
+  .rag-pics-thanks,
+  .dark .rag-pics-thanks {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: var(--live-green) !important;
+  }
+
+  @media (max-width: 720px) {
+    .quick-cards {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .feature-pill--daily,
+    .rag-pics-card {
+      width: 100%;
+      flex: none;
+    }
+  }
+
+  .rag-pics-send:disabled {
+    opacity: 0.6;
   }
 
   .feature-cta-action {
@@ -724,11 +950,11 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   .ad-placement-label {
     margin-bottom: 0.55rem;
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: 1.2rem;
     font-weight: 900;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #003b75;
+    color: var(--live-green);
   }
 
   .ad-placement h2 {
@@ -777,9 +1003,10 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     background: #ffffff;
     padding: 0.7rem 0.85rem;
     font-family: var(--font-mono);
-    font-size: 0.66rem;
+    font-size: 1.32rem;
     font-weight: 900;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.06em;
+    line-height: 1.15;
     text-transform: uppercase;
     color: #003b75;
     transition: background 200ms ease, color 200ms ease, transform 200ms ease;
@@ -882,6 +1109,12 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     box-shadow: 0 10px 24px rgba(2, 6, 23, 0.45);
   }
 
+  .dark .quick-cards .feature-pill {
+    border-color: rgba(255, 255, 255, 0.28);
+    background: #162033;
+    box-shadow: none;
+  }
+
   .dark main,
   .dark section,
   .dark footer,
@@ -907,6 +1140,25 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     color: #ffffff !important;
   }
 
+  .rag-pics-card .rag-pics-title,
+  .dark .rag-pics-card .rag-pics-title {
+    color: var(--live-green) !important;
+  }
+
+  .rag-pics-line,
+  .dark .rag-pics-line {
+    display: block;
+    margin-top: 0.15rem;
+    font-family: "Barlow Condensed", "Barlow", sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: 0.01em;
+    text-align: center;
+    text-wrap: balance;
+    color: #ffffff !important;
+  }
+
   .dark p,
   .dark span,
   .dark label {
@@ -927,6 +1179,18 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     color: #87ceeb !important;
   }
 
+  .taxpayer-word,
+  .dark .taxpayer-word,
+  .dark span.taxpayer-word,
+  .dark p .taxpayer-word,
+  .dark h1 .taxpayer-word,
+  .dark h2 .taxpayer-word,
+  .dark h3 .taxpayer-word,
+  .dark a .taxpayer-word,
+  .dark strong .taxpayer-word {
+    color: var(--live-green) !important;
+  }
+
   .dark .text-outline {
     color: rgba(200, 219, 245, 0.08);
     -webkit-text-stroke: 1.4px rgba(228, 237, 247, 0.9);
@@ -934,9 +1198,12 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   }
 
   .dark .eyebrow,
-  .dark .ad-placement-label,
   .dark .lower-third {
     color: #ffffff !important;
+  }
+
+  .dark .ad-placement-label {
+    color: var(--live-green) !important;
   }
 
   .dark .lower-third {
@@ -1039,7 +1306,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   .dark .live-flash-badge,
   .dark .live-flash-text,
   .dark .live-bolt {
-    color: #39ff14 !important;
+    color: var(--live-green) !important;
   }
 
   .dark .retro-news-logo {

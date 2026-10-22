@@ -1,15 +1,4 @@
 import { ArrowLeft } from "lucide-react";
-import { FaFacebookF, FaInstagram, FaTiktok, FaXTwitter, FaYoutube } from "react-icons/fa6";
-import { SiThreads } from "react-icons/si";
-
-const contactPlatforms = [
-  { label: "Instagram", href: "https://www.instagram.com", Icon: FaInstagram },
-  { label: "TikTok", href: "https://www.tiktok.com", Icon: FaTiktok },
-  { label: "Facebook", href: "https://www.facebook.com", Icon: FaFacebookF },
-  { label: "YouTube", href: "https://www.youtube.com", Icon: FaYoutube },
-  { label: "X", href: "https://x.com", Icon: FaXTwitter },
-  { label: "Threads", href: "https://www.threads.net", Icon: SiThreads },
-];
 
 export default function Contact() {
   return (
@@ -23,23 +12,8 @@ export default function Contact() {
           <p className="eyebrow">Contact</p>
           <h1 className="mt-3 font-display text-5xl font-black uppercase leading-none text-[#102a43]">Get in touch</h1>
           <p className="mt-5 text-sm leading-7 text-[#334e68]">
-            For story tips, submission-rights requests, or legal notice follow-up, contact us through our official social
-            channels below. Dedicated legal inbox details will be added here once finalized.
+            Sponsorships, video features, and story tips are not open yet. flushreport.live does not have a working inbox, so an email sent there will not arrive.
           </p>
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            {contactPlatforms.map((platform) => (
-              <a
-                key={platform.label}
-                href={platform.href}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 border border-[#cdeaf5] bg-[#f8fdff] px-4 py-2 font-mono text-xs font-black uppercase tracking-[0.12em] text-[#0b6fa4] hover:border-[#0b6fa4]"
-              >
-                <platform.Icon className="h-4 w-4" /> {platform.label}
-              </a>
-            ))}
-          </div>
         </section>
       </div>
     </main>

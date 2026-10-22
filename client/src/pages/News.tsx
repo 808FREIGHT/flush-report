@@ -16,6 +16,7 @@ import {
   Waves,
 } from "lucide-react";
 import { DailyNewsStory, fallbackDailyStories, loadDailyWastewaterStories } from "@/lib/dailyNews";
+import { markTaxpayer } from "@/lib/markTaxpayer";
 
 function iconForCategory(category: string) {
   const normalized = category.toLowerCase();
@@ -88,8 +89,8 @@ export default function News() {
                     </div>
                     <Icon className="h-7 w-7 shrink-0 text-[#003b75] transition group-hover:scale-105" />
                   </div>
-                  <h3 className="mt-8 font-display text-4xl font-black uppercase leading-none text-[#102a43]">{item.title}</h3>
-                  {item.summary ? <p className="mt-4 text-sm leading-6 text-[#526d82]">{item.summary}</p> : null}
+                  <h3 className="mt-8 font-display text-4xl font-black uppercase leading-none text-[#102a43]">{markTaxpayer(item.title)}</h3>
+                  {item.summary ? <p className="mt-4 text-sm leading-6 text-[#526d82]">{markTaxpayer(item.summary)}</p> : null}
                   <div className="mt-7 flex flex-col gap-3 border-t border-[#d6eaf2] pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <span className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#526d82]">
                       {item.source} · {item.date}
@@ -116,9 +117,9 @@ export default function News() {
             <p className="mt-4 max-w-3xl text-base leading-7 text-white/78">
               The Flush Report can turn wastewater news, utility warnings, pump repairs, and field proof into public education that helps people understand the real cost of treating toilets like trash cans.
             </p>
-            <a href="/submit-story" className="story-submit-cta mt-6 inline-flex h-12 items-center justify-center border border-[#87a9c8] bg-[#0f2a46] px-5 font-mono text-[11px] font-black uppercase tracking-[0.16em] text-white transition hover:bg-[#184166]">
-              Submit article or file <ArrowRight className="ml-3 h-4 w-4" />
-            </a>
+            <p className="mt-6 font-mono text-[11px] font-black uppercase tracking-[0.16em] text-white/80">
+              Story tips open soon.
+            </p>
           </div>
         </div>
       </section>

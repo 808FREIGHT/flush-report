@@ -7,6 +7,9 @@ dist/
 build/
 *.dist
 
+# Back office uploads
+data/
+
 # Environment variables
 .env
 .env.local

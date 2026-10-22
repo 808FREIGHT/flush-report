@@ -3,7 +3,7 @@
 // editorial surfaces, ocean blue backgrounds, sea-glass accents, calm broadcast structure, and a
 // soulful Hawaii-origin mission centered on consumer accountability rather than corporate shaming.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   BadgeDollarSign,
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { FaFacebookF, FaInstagram, FaTiktok, FaXTwitter, FaYoutube } from "react-icons/fa6";
 import { SiThreads } from "react-icons/si";
+import RagPicsCard from "@/components/RagPicsCard";
 import {
   Select,
   SelectContent,
@@ -42,11 +43,121 @@ import {
   runScrapeDiagnostics,
   WildlifeImpactStory,
 } from "@/lib/dailyNews";
+import { markTaxpayer } from "@/lib/markTaxpayer";
 import { lookupRepresentativesByZip, type Representative } from "@/lib/representatives";
 
 const defaultTickerStories = fallbackDailyStories.slice(0, 5).map((story) => ({
   ...story,
 }));
+
+const hawaiiHeroStories: DailyNewsStory[] = [
+  {
+    category: "Public warnings",
+    title: "Hawaii County pleads with residents not to flush so-called flushable wipes",
+    summary:
+      "County environmental officials said wipes stay whole, catch inside pipes and pump stations, and can block the sewer so toilets and drains back up.",
+    source: "Hawaii County DEM",
+    sourceUrl: "https://hawaiizerowaste.org",
+    date: "Mar. 20, 2020",
+    url: "https://hawaiizerowaste.org/site-content/uploads/2020-03-20-DEM-Issues-Plea-to-Not-Flush-So-called-Flushable-Wipes-press-release.pdf",
+    location: "Hawaii Island",
+  },
+  {
+    category: "Public warnings",
+    title: "Honolulu warns flushing wipes can clog pump stations and spill sewage",
+    summary:
+      "The city's environmental department said only pee, poop, and toilet paper belong in the sewer. Wipes labeled flushable still do not break down and can jam pipes, pump stations, and treatment plants.",
+    source: "Honolulu Star-Advertiser",
+    sourceUrl: "https://www.staradvertiser.com",
+    author: "Nina Wu",
+    date: "Mar. 23, 2020",
+    url: "https://www.staradvertiser.com/2020/03/23/breaking-news/honolulu-officials-flushing-wipes-down-toilet-could-cause-sewer-backups-and-spills-on-oahu/",
+    location: "Honolulu, Hawaii",
+  },
+  {
+    category: "Infrastructure money",
+    title: "Hilo operators say flushable wipes foul pumps as the plant needs about $100 million",
+    summary:
+      "Plant staff told Hawaii News Now that wipes and other flushed trash foul pumps. Hawaii County said the aging Hilo plant needs about $100 million, and a pump short spilled 8,600 gallons offshore of Keaukaha.",
+    source: "Hawaii News Now",
+    sourceUrl: "https://www.hawaiinewsnow.com",
+    author: "Allyson Blair",
+    date: "Feb. 09, 2022",
+    url: "https://www.hawaiinewsnow.com/2022/02/10/hilos-sewage-plant-danger-complete-failure-could-trigger-environmental-disaster/",
+    location: "Hilo, Hawaii",
+  },
+  {
+    category: "Infrastructure money",
+    title: "Hawaii County tells lawmakers wipes clog pumps and drive up repair costs",
+    summary:
+      "The Department of Environmental Management supported do-not-flush labeling, saying wipes block screens, pumps, and lines and force more repairs, replacements, and hands-on cleanouts.",
+    source: "Hawaii County DEM",
+    sourceUrl: "https://www.capitol.hawaii.gov",
+    date: "Feb. 24, 2025",
+    url: "https://www.capitol.hawaii.gov/sessions/session2025/Testimony/HB918_HD1_TESTIMONY_JHA_02-25-25_.PDF",
+    location: "Hawaii Island",
+  },
+  {
+    category: "Infrastructure money",
+    title: "County awards $337 million to rebuild Hilo's wastewater plant and pump stations",
+    summary:
+      "Hawaii County awarded Nan Inc. a $337 million contract to replace failing Hilo plant equipment, including pumping stations and the headworks that pull out large debris, after years of corrosion and deferred repair.",
+    source: "Hawaii County",
+    sourceUrl: "https://www.hawaiicounty.gov",
+    date: "Feb. 11, 2025",
+    url: "https://www.hawaiicounty.gov/Home/Components/News/News/3924/720",
+    location: "Hilo, Hawaii",
+  },
+  {
+    category: "Public warnings",
+    title: "Star-Advertiser: nearly all material in sewer clogs should never have been flushed",
+    summary:
+      "A sewage-debris study covered by the Star-Advertiser found wipes and other non-flushable items make up almost all of what crews pull from lines, and utilities spend hundreds of millions a year dealing with it.",
+    source: "Honolulu Star-Advertiser",
+    sourceUrl: "https://www.staradvertiser.com",
+    date: "Jun. 03, 2024",
+    url: "https://www.staradvertiser.com/2024/06/03/hawaii-renovation/new-study-shows-99-of-materials-causing-sewage-clogs-should-never-have-been-flushed/",
+    location: "Honolulu, Hawaii",
+  },
+  {
+    category: "Catastrophes",
+    title: "Pump failure spills about 6,000 gallons at Kauai's Coco Palms station",
+    summary:
+      "Kauai County said a failed pump controller left the Wailua Coco Palms pumps dead and spilled about 6,000 gallons inside a fenced yard. The sewage did not reach state waters.",
+    source: "Honolulu Star-Advertiser",
+    sourceUrl: "https://www.staradvertiser.com",
+    date: "May 01, 2024",
+    url: "https://www.staradvertiser.com/2024/05/01/breaking-news/pump-failure-caused-wastewater-spill-at-kauais-coco-palms-station/",
+    location: "Wailua, Kauai",
+  },
+  {
+    category: "Catastrophes",
+    title: "EPA investigates wastewater released into Puhi Bay from Hilo's sewage plant",
+    summary:
+      "Civil Beat reported a large release from the troubled Hilo plant into Puhi Bay, the same shoreline outfall that takes treated wastewater from Keaukaha.",
+    source: "Honolulu Civil Beat",
+    sourceUrl: "https://www.civilbeat.org",
+    date: "Jun. 2024",
+    url: "https://www.civilbeat.org/2024/06/epa-is-investigating-wastewater-released-into-puhi-bay-from-troubled-hilo-sewage-plant/",
+    location: "Puhi Bay, Hawaii",
+  },
+];
+
+function mixHeroStories(national: DailyNewsStory[], hawaii: DailyNewsStory[]): DailyNewsStory[] {
+  const mixed: DailyNewsStory[] = [];
+  const seen = new Set<string>();
+  const push = (story?: DailyNewsStory) => {
+    if (!story || seen.has(story.url)) return;
+    seen.add(story.url);
+    mixed.push(story);
+  };
+  const length = Math.max(national.length, hawaii.length);
+  for (let index = 0; index < length; index += 1) {
+    push(hawaii[index]);
+    push(national[index]);
+  }
+  return mixed;
+}
 
 const timeZoneOptions = [
   { label: "Hawaii-Aleutian", value: "Pacific/Honolulu" },
@@ -57,6 +168,7 @@ const timeZoneOptions = [
   { label: "Eastern", value: "America/New_York" },
 ];
 
+// Social Media and Merch stay parked until those lanes are live. Set parked to false to show them again.
 const featurePills = [
   {
     title: "Daily News",
@@ -66,47 +178,50 @@ const featurePills = [
     action: "Read the latest",
     icon: Newspaper,
     neonTitle: true,
+    parked: false,
   },
   {
     title: "Social Media",
     eyebrow: "The Flush Report",
-    copy: "Upload a video and be featured on The Flush Report!",
-    href: "/featured",
-    action: "Upload a video and be featured on The Flush Report!",
+    copy: "Video features open soon.",
+    href: null,
+    action: "Coming soon",
     icon: Camera,
     showSocialIcons: true,
+    parked: true,
   },
   {
     title: "Merch",
     eyebrow: "Latest gear",
-    copy: "Latest shirts, hats, stickers, and worksite-friendly gear for the message.",
+    copy: "Shirts, hats, and stickers are on the way.",
     href: null,
     action: "Coming soon",
     icon: ShoppingBag,
+    parked: true,
   },
 ];
 
 const adPlacements = {
   awareness: {
-    label: "Sponsor",
+    label: "BECOME A SPONSOR!",
     title: "Support public education",
     copy: "This space supports organizations committed to clean water, public infrastructure, and consumer awareness.",
     slot: "Awareness partner",
   },
   field: {
-    label: "Sponsor",
+    label: "BECOME A SPONSOR!",
     title: "Equipment & field gear",
     copy: "Built for the operators and crews who keep systems running. Featured partners serve the wastewater and infrastructure industry.",
     slot: "Industry partner",
   },
   community: {
-    label: "Sponsor",
+    label: "BECOME A SPONSOR!",
     title: "Industry partners",
     copy: "Utilities, manufacturers, and service providers supporting public education and infrastructure awareness.",
     slot: "Industry partner",
   },
   closing: {
-    label: "Sponsor",
+    label: "BECOME A SPONSOR!",
     title: "Closing sponsor",
     copy: "A final word from partners who believe in clean water and informed communities.",
     slot: "Partner",
@@ -139,6 +254,49 @@ const thinkBeforeImages = [
   { src: "/think-before/13.png", alt: "Dark fibrous blockage with cable in runoff" },
   { src: "/think-before/14.png", alt: "Large pale clog pile removed from trench" },
   { src: "/think-before/15.png", alt: "Truck bin full of extracted wipes and sludge" },
+  { src: "/think-before/16.jpg", alt: "Shovel lifting a tan rag mass off a wet pad" },
+  { src: "/think-before/17.jpg", alt: "Pale wipe pile pulled against a curb" },
+  { src: "/think-before/18.jpg", alt: "Mixed rags and trash sitting in muddy water" },
+  { src: "/think-before/19.jpg", alt: "Black rag pile raked up in the rain" },
+  { src: "/think-before/20.jpg", alt: "Plastics and bottles stranded along a treatment channel" },
+  { src: "/think-before/21.jpg", alt: "Red dumpster packed with black rag debris" },
+  { src: "/think-before/22.jpg", alt: "Wipes and bottles washed onto a channel bank" },
+  { src: "/think-before/23.jpg", alt: "Debris bank beside a channel with washdown pipes" },
+  { src: "/think-before/24.jpg", alt: "Hopper full of wipes, gloves, and mixed trash" },
+  { src: "/think-before/25.jpg", alt: "Screenings chute dropping rags into a hopper" },
+  { src: "/think-before/26.jpg", alt: "Close view of plastics and wipes on a channel edge" },
+  { src: "/think-before/27.jpg", alt: "Bin of wipes, bottles, and gloves from a cleanup" },
+  { src: "/think-before/28.jpg", alt: "Rag pile with bottles beside a crew member" },
+  { src: "/think-before/29.jpg", alt: "Tan rag mass pulled behind concrete blocks" },
+  { src: "/think-before/30.jpg", alt: "Rag pile with a rake at the edge of the pad" },
+  { src: "/think-before/31.jpg", alt: "Rake buried in a brown rag mound" },
+  { src: "/think-before/32.jpg", alt: "Wet rag mass piled against a concrete wall" },
+  { src: "/think-before/33.jpg", alt: "Close view of a dark compacted rag clog" },
+  { src: "/think-before/34.jpg", alt: "Clogged nozzle and wand pulled from the line" },
+  { src: "/think-before/35.jpg", alt: "Rake standing in a rag pile next to a bottle" },
+  { src: "/think-before/36.jpg", alt: "Grease chunks cleared beside an open channel" },
+  { src: "/think-before/37.jpg", alt: "Rake resting on a fresh rag pile" },
+  { src: "/think-before/38.jpg", alt: "Perforated screen wrapped in flushed wipes" },
+  { src: "/think-before/39.jpg", alt: "Wipes wrapped tight around a pipe" },
+  { src: "/think-before/40.jpg", alt: "Street pile of wipes and plastic debris" },
+  { src: "/think-before/41.jpg", alt: "Large tan rag mound on the wet pad" },
+  { src: "/think-before/42.jpg", alt: "Close view of a fibrous tan rag mass" },
+  { src: "/think-before/43.jpg", alt: "Rag mass bagged after removal" },
+  { src: "/think-before/44.jpg", alt: "Dumpster of rags, a mask, and a bottle" },
+  { src: "/think-before/45.jpg", alt: "Dumpster loaded with rags and a trash bag" },
+  { src: "/think-before/46.jpg", alt: "Rags spread across diamond plate" },
+  { src: "/think-before/47.jpg", alt: "Basket full of dark rag debris" },
+  { src: "/think-before/48.jpg", alt: "Wipes and debris laid out on diamond plate" },
+  { src: "/think-before/49.jpg", alt: "Rag pile with leaves pulled from the flow" },
+  { src: "/think-before/50.jpg", alt: "Rags draped over a bar screen" },
+  { src: "/think-before/51.jpg", alt: "Bar screen covered in a sheet of rags" },
+  { src: "/think-before/52.jpg", alt: "Large rag mass with a leaf on the deck" },
+  { src: "/think-before/53.jpg", alt: "Rag mound sitting in a treatment channel" },
+  { src: "/think-before/54.jpg", alt: "Rain-soaked rag mound along the curb" },
+  { src: "/think-before/55.jpg", alt: "Wide view of a rain-soaked rag mound" },
+  { src: "/think-before/56.jpg", alt: "Pitchfork lifting a rag mass out of a wet channel" },
+  { src: "/think-before/57.jpg", alt: "Rake pulling wipes and leaves off the wet curb" },
+  { src: "/think-before/58.jpg", alt: "Rake lifting a pile of wipes beside a trash bin" },
 ];
 
 const costSlideshowImages = [
@@ -427,11 +585,14 @@ function LiveClock() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const liveTime = new Intl.DateTimeFormat("en-US", {
+  const dateLine = new Intl.DateTimeFormat("en-US", {
     timeZone,
     weekday: "short",
     month: "short",
     day: "2-digit",
+  }).format(now);
+  const timeLine = new Intl.DateTimeFormat("en-US", {
+    timeZone,
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
@@ -439,11 +600,11 @@ function LiveClock() {
   }).format(now);
 
   return (
-    <div className="flex min-w-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3" aria-label="Live local date and time">
+    <div className="live-clock flex w-full min-w-0 items-center justify-between gap-3 xl:w-auto xl:justify-end" aria-label="Live local date and time">
       <Select value={timeZone} onValueChange={setTimeZone}>
         <SelectTrigger
           size="sm"
-          className="h-8 border-[#6f95c4] bg-white px-2 font-mono text-[10px] font-black uppercase tracking-[0.12em] text-[#87ceeb] shadow-sm hover:border-[#87ceeb] sm:h-9 sm:px-3"
+          className="h-8 w-auto min-w-0 max-w-[52%] shrink border-[#6f95c4] bg-white px-2 font-mono text-[10px] font-black uppercase tracking-[0.08em] text-[#87ceeb] shadow-sm hover:border-[#87ceeb] sm:max-w-[16rem] sm:tracking-[0.12em] xl:h-9 xl:max-w-none xl:px-3"
           aria-label="Select timezone for live clock"
         >
           <SelectValue placeholder="Time zone" />
@@ -458,9 +619,11 @@ function LiveClock() {
       </Select>
       <time
         dateTime={now.toISOString()}
-        className="font-display text-lg font-black uppercase leading-none tracking-[0.08em] text-[#87ceeb] sm:text-xl"
+        className="flex min-w-0 flex-col items-end text-right font-display text-[0.72rem] font-black uppercase leading-none tracking-[0.03em] text-[#87ceeb] sm:text-sm sm:tracking-[0.05em] xl:flex-row xl:items-baseline xl:text-xl xl:tracking-[0.08em]"
       >
-        {liveTime}
+        <span className="whitespace-nowrap">{dateLine}</span>
+        <span className="hidden xl:inline" aria-hidden="true">, </span>
+        <span className="whitespace-nowrap">{timeLine}</span>
       </time>
     </div>
   );
@@ -477,6 +640,8 @@ export default function Home() {
   const [costSlideIndex, setCostSlideIndex] = useState(0);
   const [costPhotoSlideIndex, setCostPhotoSlideIndex] = useState(0);
   const [thinkSlideIndex, setThinkSlideIndex] = useState(0);
+  const [officeImages, setOfficeImages] = useState<{ src: string; alt: string }[]>([]);
+  const fieldImages = useMemo(() => [...thinkBeforeImages, ...officeImages], [officeImages]);
   const [heroStoryIndex, setHeroStoryIndex] = useState(0);
   const [tickerStories, setTickerStories] = useState(defaultTickerStories);
   const [dailyCostSignals, setDailyCostSignals] = useState<DailyCostSignal[]>(fallbackCostSignals);
@@ -487,6 +652,26 @@ export default function Home() {
   const [repLookupUpdatedAt, setRepLookupUpdatedAt] = useState<string | null>(null);
   const [isAmbiguousZipLookup, setIsAmbiguousZipLookup] = useState(false);
   const [representatives, setRepresentatives] = useState<Representative[]>([]);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    const syncHeaderHeight = () => {
+      document.documentElement.style.setProperty("--site-header-height", `${Math.ceil(header.getBoundingClientRect().height)}px`);
+    };
+
+    syncHeaderHeight();
+    const observer = new ResizeObserver(syncHeaderHeight);
+    observer.observe(header);
+    window.addEventListener("resize", syncHeaderHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", syncHeaderHeight);
+    };
+  }, []);
 
   const {
     uniqueTickerStories,
@@ -504,6 +689,7 @@ export default function Home() {
     };
 
     const ticker = dedupeWithinSection(tickerStories).slice(0, 6);
+    const heroStories = mixHeroStories(ticker, hawaiiHeroStories);
 
     const wildlifePrimary = dedupeWithinSection(wildlifeImpactStories).slice(0, 3);
     const wildlifeFill = dedupeWithinSection(fallbackWildlifeImpactStories).slice(0, Math.max(0, 3 - wildlifePrimary.length));
@@ -524,7 +710,7 @@ export default function Home() {
     const ensuredCostArticles = combinedCostArticles.length > 0 ? combinedCostArticles : fallbackCostSectionArticles.slice(0, 1);
 
     return {
-      uniqueTickerStories: ticker.length > 0 ? ticker : defaultTickerStories,
+      uniqueTickerStories: heroStories.length > 0 ? heroStories : mixHeroStories(defaultTickerStories, hawaiiHeroStories),
       uniqueWildlifeStories: wildlife.length > 0 ? wildlife : fallbackWildlifeImpactStories,
       uniqueCostSignals: costSignals.length > 0 ? costSignals : fallbackCostSignals,
       uniqueCostSectionArticles: ensuredCostArticles,
@@ -561,12 +747,26 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    fetch("/api/rag-ticker")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload: { images?: { src: string; alt: string }[] } | null) => {
+        if (active && payload?.images) setOfficeImages(payload.images);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (fieldImages.length === 0) return;
     const timer = window.setInterval(() => {
-      setThinkSlideIndex((index) => (index + 1) % thinkBeforeImages.length);
+      setThinkSlideIndex((index) => (index + 1) % fieldImages.length);
     }, 2800);
 
     return () => window.clearInterval(timer);
-  }, []);
+  }, [fieldImages.length]);
 
   useEffect(() => {
     if (uniqueTickerStories.length <= 1) return;
@@ -658,9 +858,9 @@ export default function Home() {
 
   return (
       <main className="min-h-screen overflow-hidden bg-white text-[#102a43] selection:bg-[#0b6fa4] selection:text-white dark:bg-[#111827] dark:text-[#e5edf7]">
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-[#c7d8eb]/80 bg-white/92 shadow-[0_8px_30px_rgba(12,49,92,0.1)] backdrop-blur-xl dark:border-[#2b3950] dark:bg-[#0f172a]/92">
-          <div className="flex min-h-16 items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-          <a href="#top" className="group flex items-center gap-3" aria-label="The Flush Report home">
+      <header ref={headerRef} className="site-header fixed inset-x-0 top-0 z-50 border-b border-[#c7d8eb]/80 bg-white/92 shadow-[0_8px_30px_rgba(12,49,92,0.1)] backdrop-blur-xl dark:border-[#2b3950] dark:bg-[#0f172a]/92">
+          <div className="site-header__bar flex flex-col items-stretch gap-1.5 px-4 py-2.5 sm:gap-2 sm:px-6 lg:px-8 xl:min-h-16 xl:flex-row xl:items-center xl:justify-between xl:gap-4">
+          <a href="#top" className="site-header__brand group flex w-full min-w-0 flex-none items-center gap-3 xl:w-auto" aria-label="The Flush Report home">
             <div className="retro-news-logo">
               <span className="retro-news-logo__channel" aria-label="TFR LIVE channel badge">
                 <img src="/tfr-logo-transparent-v1.png" alt="" className="retro-news-logo__exact" aria-hidden="true" />
@@ -671,33 +871,33 @@ export default function Home() {
             </div>
           </a>
 
-          <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
+          <div className="site-header__clock flex w-full min-w-0 flex-none items-center xl:ml-auto xl:w-auto">
             <LiveClock />
           </div>
         </div>
       </header>
 
-      <div className="h-[86px] sm:h-[94px]" aria-hidden="true" />
+      <div className="site-header-spacer" aria-hidden="true" />
 
       <section aria-label="Quick access to Flush Report features" className="quick-access-shell relative z-20 border-b border-[#cdeaf5] bg-white px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl pb-2 pt-2">
-          <div className="grid gap-2 lg:grid-cols-3">
-            {featurePills.map((feature) => {
+          <div className="quick-cards">
+            {featurePills.filter((feature) => !feature.parked).map((feature) => {
               const content = (
                 <div className="flex h-full flex-col">
                   <h3
                     className={`${
                       "neonTitle" in feature && feature.neonTitle
-                        ? "font-display text-[1.02rem] font-black uppercase leading-none tracking-[-0.02em] whitespace-nowrap"
+                        ? "font-display text-[1.15rem] font-black uppercase leading-none tracking-[-0.03em]"
                         : "font-display text-[1.02rem] font-black uppercase leading-none tracking-[-0.02em] text-[#102a43]"
                     }`}
                   >
-                    <span className={"neonTitle" in feature && feature.neonTitle ? "live-flash-text" : undefined}>{feature.title}</span>
+                    <span className={"neonTitle" in feature && feature.neonTitle ? "live-flash-text" : undefined}>{markTaxpayer(feature.title)}</span>
                     {"neonTitle" in feature && feature.neonTitle ? (
                       <Zap className="live-bolt live-bolt--card ml-1 inline-block align-middle" aria-hidden="true" />
                     ) : null}
                   </h3>
-                  <p className="mt-1 text-[0.73rem] font-extrabold leading-4 text-[#526d82] sm:text-[0.76rem]">{feature.copy}</p>
+                  <p className={"neonTitle" in feature && feature.neonTitle ? "mt-1 text-[0.82rem] font-extrabold leading-snug text-[#526d82]" : "mt-1 text-[0.73rem] font-extrabold leading-4 text-[#526d82] sm:text-[0.76rem]"}>{markTaxpayer(feature.copy)}</p>
                   {"showSocialIcons" in feature && feature.showSocialIcons ? (
                     <div className="mt-1.5 flex flex-wrap gap-1" aria-label="FRTV social app emblems">
                       {socialApps.map((app) => (
@@ -714,16 +914,19 @@ export default function Home() {
                 </div>
               );
 
+              const pillClass = `feature-pill group${"neonTitle" in feature && feature.neonTitle ? " feature-pill--daily" : ""}`;
+
               return feature.href ? (
-                <a key={feature.title} href={feature.href} className="feature-pill group" aria-label={`${feature.title}: ${feature.copy}`}>
+                <a key={feature.title} href={feature.href} className={pillClass} aria-label={`${feature.title}: ${feature.copy}`}>
                   {content}
                 </a>
               ) : (
-                <div key={feature.title} className="feature-pill group">
+                <div key={feature.title} className={pillClass}>
                   {content}
                 </div>
               );
             })}
+            <RagPicsCard />
           </div>
         </div>
       </section>
@@ -755,11 +958,11 @@ export default function Home() {
                     />
                   ) : null}
                   <h3 className="font-display text-2xl font-black uppercase leading-[0.95] tracking-[-0.02em] text-[#102a43]">
-                    {activeHeroStory.title}
+                    {markTaxpayer(activeHeroStory.title)}
                   </h3>
                 </div>
                 <p className="mt-3 font-mono text-[11px] font-black uppercase tracking-[0.11em] text-[#64748b]">
-                  Article: {activeHeroStory.title}
+                  Article: {markTaxpayer(activeHeroStory.title)}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <p className="font-mono text-[11px] font-black uppercase tracking-[0.11em] text-[#64748b]">
@@ -774,7 +977,7 @@ export default function Home() {
 
             <aside className="hidden overflow-hidden lg:block" aria-label="Think before you flush field slideshow">
               <div className="relative h-full min-h-[24rem] overflow-hidden rounded-2xl bg-[#eef5fc] shadow-[0_16px_36px_rgba(16,42,67,0.14)] xl:min-h-[30rem]">
-                {thinkBeforeImages.map((image, index) => (
+                {fieldImages.map((image, index) => (
                   <img
                     key={image.src}
                     src={image.src}
@@ -808,7 +1011,7 @@ export default function Home() {
             The Flush Report exists to give the public clear, source-backed facts about what happens after a bad flush. This is not abstract infrastructure talk: wipes and trash jam pumps, strain treatment systems, increase hauling, and push pressure downstream to the waters where we live, eat, and play.
           </p>
           <p className="mt-5 max-w-6xl text-xl leading-8 text-[#334e68] sm:text-2xl">
-            Our local story starts in Keaukaha and extends nationwide. What we flush does not disappear; it becomes worker labor, taxpayer cost, landfill tonnage, and environmental stress. Better flushing habits protect crews, infrastructure, and the ecosystems downstream.
+            {markTaxpayer("Our local story starts in Keaukaha and extends nationwide. What we flush does not disappear; it becomes worker labor, taxpayer cost, landfill tonnage, and environmental stress. Better flushing habits protect crews, infrastructure, and the ecosystems downstream.")}
           </p>
           <div className="mt-10 space-y-3" aria-label="Flush-to-system process steps">
             {flowSteps.map((step) => {
@@ -825,7 +1028,7 @@ export default function Home() {
                       <span className="text-white">{step.title}</span>
                     )}
                   </h3>
-                  <p className="mt-3 text-xl leading-8 text-[#334e68] sm:text-2xl">{step.copy}</p>
+                  <p className="mt-3 text-xl leading-8 text-[#334e68] sm:text-2xl">{markTaxpayer(step.copy)}</p>
                 </article>
               );
             })}
@@ -850,7 +1053,7 @@ export default function Home() {
               <article key={`${signal.lane}-${signal.url}`} className="stat-card group">
                 <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-[#64748b]">{signal.lane}</p>
                 <h3 className="mt-2 font-display text-5xl font-black uppercase leading-none text-[#102a43]">{signal.amount}</h3>
-                {signal.snippet ? <p className="mt-4 text-sm leading-6 text-[#526d82]">{signal.snippet}</p> : null}
+                {signal.snippet ? <p className="mt-4 text-sm leading-6 text-[#526d82]">{markTaxpayer(signal.snippet)}</p> : null}
                 <div className="mt-6 border-t border-[#d6eaf2] pt-3">
                   {signal.location ? (
                     <p className="font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#64748b]">{signal.location}</p>
@@ -879,9 +1082,9 @@ export default function Home() {
                   Archive to present · {story.date}
                 </p>
                 <h3 className="mt-3 font-display text-2xl font-black uppercase leading-[0.95] tracking-[-0.02em] text-[#102a43]">
-                  {story.title}
+                  {markTaxpayer(story.title)}
                 </h3>
-                {story.snippet ? <p className="mt-3 text-sm leading-6 text-[#526d82]">{story.snippet}</p> : null}
+                {story.snippet ? <p className="mt-3 text-sm leading-6 text-[#526d82]">{markTaxpayer(story.snippet)}</p> : null}
                 <div className="mt-4 border-t border-[#d6eaf2] pt-3">
                   {story.location ? (
                     <p className="font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#64748b]">{story.location}</p>
@@ -954,12 +1157,12 @@ export default function Home() {
                           <div>
                             <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#bfe4f5]">{article.category}</p>
                             <h3 className="mt-2 max-w-xl font-display text-2xl font-black uppercase leading-[0.92] tracking-[-0.02em] text-white">
-                              {article.title}
+                              {markTaxpayer(article.title)}
                             </h3>
                           </div>
                         </div>
                       </div>
-                      <p className="mt-3 max-w-xl text-sm leading-6 text-white/90">{article.blurb}</p>
+                      <p className="mt-3 max-w-xl text-sm leading-6 text-white/90">{markTaxpayer(article.blurb)}</p>
                     </div>
                     <div className="inline-flex items-center justify-between border-t border-white/30 pt-3 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#dbeef7]">
                       <span>Source: {article.source}</span>
@@ -985,7 +1188,7 @@ export default function Home() {
           </div>
           <div className="ad-placement-slot">
             <span>{adPlacements.awareness.slot}</span>
-            <a href="mailto:sponsor@flushreport.live">Become a sponsor</a>
+            <a href="/contact">Sponsorships open soon</a>
           </div>
         </div>
       </section>
@@ -993,8 +1196,8 @@ export default function Home() {
       <section className="border-y border-[#cdeaf5] bg-[#f8fbff] px-4 py-6 sm:px-6 lg:px-8" aria-label="Daily visual reminder">
         <div className="mx-auto max-w-7xl">
           <div className="overflow-hidden">
-            <div className="ick-ticker-track">
-              {[...thinkBeforeImages, ...thinkBeforeImages].map((image, index) => (
+            <div className="ick-ticker-track" style={{ animationDuration: `${Math.round((348 / 55) * fieldImages.length)}s` }}>
+              {[...fieldImages, ...fieldImages].map((image, index) => (
                 <figure key={`bottom-${image.src}-${index}`} className="ick-ticker-item relative">
                   <img src={image.src} alt={image.alt} className="h-48 w-52 object-cover sm:h-56 sm:w-60" />
                 </figure>
@@ -1013,7 +1216,7 @@ export default function Home() {
           </div>
           <div className="ad-placement-slot">
             <span>{adPlacements.field.slot}</span>
-            <a href="mailto:sponsor@flushreport.live">Partner with us</a>
+            <a href="/contact">Sponsorships open soon</a>
           </div>
         </div>
       </section>
@@ -1134,7 +1337,7 @@ export default function Home() {
           </div>
           <div className="ad-placement-slot">
             <span>{adPlacements.community.slot}</span>
-            <a href="mailto:sponsor@flushreport.live">Get in touch</a>
+            <a href="/contact">Sponsorships open soon</a>
           </div>
         </div>
       </section>
@@ -1148,7 +1351,7 @@ export default function Home() {
           </div>
           <div className="ad-placement-slot">
             <span>{adPlacements.closing.slot}</span>
-            <a href="mailto:sponsor@flushreport.live">Sponsor this space</a>
+            <a href="/contact">Sponsorships open soon</a>
           </div>
         </div>
       </section>
@@ -1165,33 +1368,15 @@ export default function Home() {
             <a href="/terms" className="hover:text-[#0b6fa4]">Terms &amp; Conditions</a>
             <span aria-hidden="true">·</span>
             <a href="/contact" className="hover:text-[#0b6fa4]">Contact</a>
+            <span aria-hidden="true">·</span>
+            <a href="/admin" className="hover:text-[#0b6fa4]">Office</a>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3" aria-label="Flush Report social links">
+          <div className="flex flex-wrap items-center justify-center gap-3" aria-label="Social profiles open soon">
             {socialApps.map((app) => (
-              <a
-                key={`footer-${app.label}`}
-                href={
-                  app.key === "instagram"
-                    ? "https://www.instagram.com"
-                    : app.key === "tiktok"
-                      ? "https://www.tiktok.com"
-                      : app.key === "facebook"
-                        ? "https://www.facebook.com"
-                        : app.key === "youtube"
-                          ? "https://www.youtube.com"
-                          : app.key === "x"
-                            ? "https://x.com"
-                            : "https://www.threads.net"
-                }
-                target="_blank"
-                rel="noreferrer"
-                className={`social-icon social-icon-${app.key}`}
-                aria-label={`Visit ${app.label}`}
-                title={app.label}
-              >
+              <span key={`footer-${app.label}`} className={`social-icon social-icon-${app.key}`} title={`${app.label} coming soon`} aria-label={`${app.label} coming soon`}>
                 <app.Icon />
-              </a>
+              </span>
             ))}
           </div>
         </div>
