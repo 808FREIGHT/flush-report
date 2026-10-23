@@ -928,6 +928,14 @@ export default function Home() {
 
       <div className="site-header-spacer" aria-hidden="true" />
 
+      <section aria-label="About The Flush Report" className="site-intro px-4 sm:px-6 lg:px-8">
+        <p className="mx-auto max-w-7xl py-4 text-lg font-semibold leading-snug text-[#102a43] sm:py-5 sm:text-xl lg:text-[1.45rem]">
+          {markTaxpayer("The Flush Report is a public news site about what happens after a bad flush. We cover the clogs, spills, and taxpayer bills that start when ")}
+          <span className="flush-accent-word">flushable</span>
+          {markTaxpayer(" wipes, rags, grease, and trash go down the toilet.")}
+        </p>
+      </section>
+
       <section aria-label="Quick access to Flush Report features" className="quick-access-shell relative z-20 border-b border-[#cdeaf5] bg-white px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl pb-2 pt-2">
           <div className="quick-cards">
@@ -980,26 +988,33 @@ export default function Home() {
         </div>
       </section>
 
-      <section aria-label="About The Flush Report" className="site-intro px-4 sm:px-6 lg:px-8">
-        <p className="mx-auto max-w-7xl py-4 text-lg font-semibold leading-snug text-[#102a43] sm:py-5 sm:text-xl lg:text-[1.45rem]">
-          {markTaxpayer("The Flush Report is a public news site about what happens after a bad flush. We cover the clogs, spills, and taxpayer bills that start when wipes, rags, grease, and trash go down the toilet.")}
-        </p>
-      </section>
-
       <section id="top" className="hero-scroll-stage relative overflow-hidden bg-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(116,200,214,0.24),transparent_34%),linear-gradient(135deg,#ffffff_0%,#ffffff_48%,#f4fbff_100%)]" aria-hidden="true" />
         <div className="coastal-grid absolute inset-0 opacity-50" aria-hidden="true" />
 
         <div className="relative z-10 px-4 pb-10 pt-2 sm:px-6 lg:px-8">
-          <div className="hero-feature mx-auto grid max-w-7xl items-start gap-8 lg:grid-cols-[1fr_0.92fr] lg:items-stretch">
-            <div className="animate-rise-in">
-              <h1 className="max-w-6xl font-display text-[clamp(2.85rem,8.2vw,7.8rem)] font-black uppercase leading-[0.8] tracking-[-0.072em] text-[#102a43]">
+          <div className="hero-feature mx-auto max-w-7xl">
+            <div className="hero-feature__title animate-rise-in">
+              <h1 className="font-display text-[clamp(1.55rem,8.2vw,7.8rem)] font-black uppercase leading-[0.8] tracking-[-0.072em] text-[#102a43]">
                 <span className="block">Think</span>
                 <span className="mt-[0.05em] block tracking-[-0.05em] text-outline">Before</span>
                 <span className="mt-[0.05em] block">You</span>
                 <span className="flush-accent-word mt-[0.05em] block">Flush.</span>
               </h1>
-              <div className="feature-pill mt-7 max-w-5xl">
+            </div>
+            <aside className="hero-feature__photos relative overflow-hidden" aria-label="Think before you flush field slideshow">
+              <div className="absolute inset-0 overflow-hidden rounded-2xl bg-[#eef5fc] shadow-[0_16px_36px_rgba(16,42,67,0.14)]">
+                {fieldImages.map((image, index) => (
+                  <img
+                    key={image.src}
+                    src={image.src}
+                    alt={image.alt}
+                    className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${index === thinkSlideIndex ? "opacity-100" : "opacity-0"}`}
+                  />
+                ))}
+              </div>
+            </aside>
+            <div className="hero-feature__story feature-pill">
                 <div className="flex items-start gap-3">
                   {heroSourceLogo ? (
                     <img
@@ -1028,21 +1043,7 @@ export default function Home() {
                     READ ARTICLE <ArrowRight className="h-3.5 w-3.5" />
                   </a>
                 </div>
-              </div>
             </div>
-
-            <aside className="hidden overflow-hidden lg:block" aria-label="Think before you flush field slideshow">
-              <div className="relative h-full min-h-[24rem] overflow-hidden rounded-2xl bg-[#eef5fc] shadow-[0_16px_36px_rgba(16,42,67,0.14)] xl:min-h-[30rem]">
-                {fieldImages.map((image, index) => (
-                  <img
-                    key={image.src}
-                    src={image.src}
-                    alt={image.alt}
-                    className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${index === thinkSlideIndex ? "opacity-100" : "opacity-0"}`}
-                  />
-                ))}
-              </div>
-            </aside>
           </div>
         </div>
       </section>
@@ -1104,24 +1105,24 @@ export default function Home() {
               Daily Nationwide Coverage Updates
             </h2>
           </div>
-          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-3 items-start gap-2 sm:gap-4">
             {visibleMoneyCards.map((signal) => (
-              <article key={`${signal.lane}-${signal.url}-${signal.title}`} className="stat-card group">
-                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-[#64748b]">
-                  {signal.releasedToday ? <span className="today-mark mr-2">TODAY</span> : null}
+              <article key={`${signal.lane}-${signal.url}-${signal.title}`} className="stat-card stat-card--money group">
+                <p className="money-lane font-mono font-bold uppercase text-[#64748b]">
+                  {signal.releasedToday ? <span className="today-mark mr-1">TODAY</span> : null}
                   {signal.lane}
                 </p>
                 {signal.amount ? (
-                  <h3 className="mt-2 font-display text-3xl font-black uppercase leading-none text-white sm:text-5xl">{renderMoneyFigures(signal.amount)}</h3>
+                  <h3 className="money-figure mt-1 font-display font-black uppercase text-white">{renderMoneyFigures(signal.amount)}</h3>
                 ) : (
-                  <h3 className="mt-2 font-display text-xl font-black uppercase leading-[0.95] text-white sm:text-2xl">{markTaxpayer(signal.title)}</h3>
+                  <h3 className="money-snippet font-display font-black uppercase text-white">{markTaxpayer(signal.title)}</h3>
                 )}
                 {signal.snippet &&
                 !signal.title.toLowerCase().includes(signal.snippet.toLowerCase()) &&
                 !signal.snippet.toLowerCase().includes(signal.title.toLowerCase()) ? (
-                  <p className="mt-4 text-sm leading-6 text-[#526d82]">{markTaxpayer(signal.snippet)}</p>
+                  <p className="money-snippet text-[#526d82]">{markTaxpayer(signal.snippet)}</p>
                 ) : null}
-                <div className="mt-6 border-t border-[#d6eaf2] pt-3">
+                <div className="money-card-foot border-t border-[#d6eaf2]">
                   {signal.location && !signal.title.toLowerCase().includes(signal.location.toLowerCase()) ? (
                     <p className="font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#64748b]">{signal.location}</p>
                   ) : null}

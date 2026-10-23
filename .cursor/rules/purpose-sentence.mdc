@@ -1,0 +1,24 @@
+---
+description: Keep the homepage purpose sentence under the header and above the feature cards
+alwaysApply: true
+---
+
+# Purpose sentence
+
+The homepage purpose sentence is the first thing under the site header, on phone, tablet, and desktop. It sits above the Daily News card and the rag-pic card so a visitor reads what the site is before those cards.
+
+Keep that sentence in the `site-intro` section in `client/src/pages/Home.tsx`, and keep that section before the quick-access section. It stays full width of the page content (`max-w-7xl`). The cards may stack on a phone. They still come after the sentence.
+
+Pass the sentence through `markTaxpayer()` so the word taxpayer keeps its standing treatment. The single word `flushable` in this sentence is flush blue (`flush-accent-word`). Leave every other flushable on the site alone.
+
+```tsx
+<section aria-label="About The Flush Report" className="site-intro">
+  <p className="mx-auto max-w-7xl">
+    {markTaxpayer("The Flush Report is a public news site about what happens after a bad flush. We cover the clogs, spills, and taxpayer bills that start when ")}
+    <span className="flush-accent-word">flushable</span>
+    {markTaxpayer(" wipes, rags, grease, and trash go down the toilet.")}
+  </p>
+</section>
+```
+
+Do not move the sentence beside the cards, inside a card, or down under Think Before You Flush.
