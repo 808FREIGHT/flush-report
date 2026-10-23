@@ -789,16 +789,23 @@ export default function Home() {
     setMoneyArchive(rememberMoneyCards(fresh));
   }, [tickerStories]);
 
-  useEffect(() => {
-    if (moneyCardBase.length <= 3) return;
-    const timer = window.setInterval(() => {
-      setMoneyCardIndex((index) => (index + 1) % moneyCardBase.length);
-    }, 10000);
-    return () => window.clearInterval(timer);
-  }, [moneyCardBase.length]);
+  const moneyCountRef = useRef(moneyCardBase.length);
+  moneyCountRef.current = moneyCardBase.length;
+  const leadMoneyCard = moneyCardBase.length > 0 ? moneyCardBase[moneyCardIndex % moneyCardBase.length] : undefined;
+  const leadMoneyKey = leadMoneyCard ? `${leadMoneyCard.url}::${leadMoneyCard.title}` : "";
+  const leadMoneyIsToday = Boolean(leadMoneyCard?.releasedToday);
 
   useEffect(() => {
-    setMoneyCardIndex(0);
+    if (moneyCountRef.current <= 3) return;
+    const delay = leadMoneyIsToday ? 17000 : 10000;
+    const timer = window.setTimeout(() => {
+      setMoneyCardIndex((index) => (index + 1) % Math.max(moneyCountRef.current, 1));
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [leadMoneyKey, leadMoneyIsToday]);
+
+  useEffect(() => {
+    setMoneyCardIndex((index) => (moneyCardBase.length === 0 ? 0 : Math.min(index, moneyCardBase.length - 1)));
   }, [moneyCardBase.length]);
 
   useEffect(() => {
@@ -845,18 +852,22 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, [fieldImages.length]);
 
-  useEffect(() => {
-    if (uniqueTickerStories.length <= 1) return;
-
-    const timer = window.setInterval(() => {
-      setHeroStoryIndex((index) => (index + 1) % uniqueTickerStories.length);
-    }, 10000);
-
-    return () => window.clearInterval(timer);
-  }, [uniqueTickerStories.length]);
+  const heroCountRef = useRef(uniqueTickerStories.length);
+  heroCountRef.current = uniqueTickerStories.length;
+  const activeHeroKey = `${activeHeroStory.url}::${activeHeroStory.title}`;
+  const heroIsToday = Boolean(activeHeroStory.releasedToday);
 
   useEffect(() => {
-    setHeroStoryIndex(0);
+    if (heroCountRef.current <= 1) return;
+    const delay = heroIsToday ? 17000 : 10000;
+    const timer = window.setTimeout(() => {
+      setHeroStoryIndex((index) => (index + 1) % Math.max(heroCountRef.current, 1));
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [activeHeroKey, heroIsToday]);
+
+  useEffect(() => {
+    setHeroStoryIndex((index) => (uniqueTickerStories.length === 0 ? 0 : Math.min(index, uniqueTickerStories.length - 1)));
   }, [uniqueTickerStories.length]);
 
   useEffect(() => {
