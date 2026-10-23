@@ -52,6 +52,31 @@ const defaultTickerStories = fallbackDailyStories.slice(0, 5).map((story) => ({
 
 const hawaiiHeroStories: DailyNewsStory[] = [
   {
+    category: "Catastrophes",
+    title: "Wastewater overflow closes Kalama Park after Kihei pump station force-main failure",
+    summary:
+      "Maui County said a mechanical failure in the force main at Kihei Wastewater Pump Station No. 6 spilled wastewater across Kalama Park, the fire station, and nearby properties. The spill had not reached the ocean. South Maui residents were asked to cut toilet flushing, bathing, laundry, and dishwashing while crews repair the line.",
+    source: "Hawaii News Now",
+    sourceUrl: "https://www.hawaiinewsnow.com",
+    author: "HNN Staff",
+    date: "Oct. 22, 2026",
+    url: "https://www.hawaiinewsnow.com/2026/10/23/wastewater-overflow-closes-portions-kalama-park-impacts-south-maui-areas/",
+    location: "Kihei, Maui",
+    releasedToday: true,
+  },
+  {
+    category: "Catastrophes",
+    title: "Papaikou plant bypass sends treated wastewater with elevated chlorine offshore",
+    summary:
+      "Hawaii County said a de-chlorination system bypass at the Papaikou Wastewater Treatment Plant discharged about 117,000 gallons of fully treated, fully disinfected wastewater that may have carried elevated residual chlorine into the Pacific. Crews restored the dispenser and notified the state Department of Health.",
+    source: "Hawaii Tribune-Herald",
+    sourceUrl: "https://www.hawaiitribune-herald.com",
+    date: "Oct. 22, 2026",
+    url: "https://www.hawaiitribune-herald.com/2026/10/22/hawaii-news/county-unintentional-wastewater-discharge-in-papaikou/",
+    location: "Papaikou, Hawaii",
+    releasedToday: true,
+  },
+  {
     category: "Public warnings",
     title: "Hawaii County pleads with residents not to flush so-called flushable wipes",
     summary:
