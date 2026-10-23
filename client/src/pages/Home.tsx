@@ -962,7 +962,7 @@ export default function Home() {
                   >
                     <span className={"neonTitle" in feature && feature.neonTitle ? "live-flash-text" : undefined}>{markTaxpayer(feature.title)}</span>
                     {"neonTitle" in feature && feature.neonTitle ? (
-                      <Zap className="live-bolt live-bolt--card ml-1 inline-block align-middle" aria-hidden="true" />
+                      <Zap className="live-bolt live-bolt--card ml-1 hidden align-middle lg:inline-block" aria-hidden="true" />
                     ) : null}
                   </h3>
                   <p className={"neonTitle" in feature && feature.neonTitle ? "mt-1 text-[0.82rem] font-extrabold leading-snug text-[#526d82]" : "mt-1 text-[0.73rem] font-extrabold leading-4 text-[#526d82] sm:text-[0.76rem]"}>{markTaxpayer(feature.copy)}</p>

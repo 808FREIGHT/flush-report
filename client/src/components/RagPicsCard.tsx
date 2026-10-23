@@ -100,13 +100,23 @@ export default function RagPicsCard() {
   };
 
   const countLabel = files.length === 1 ? "1 file attached" : `${files.length} files attached`;
+  const isOpen = chooser || files.length > 0 || status === "sending" || status === "sent" || status === "error";
 
   return (
-    <div className="feature-pill rag-pics-card">
+    <div className={`feature-pill rag-pics-card${isOpen ? " rag-pics-card--open" : ""}`}>
       <h3 className="rag-pics-headline font-display text-[1.15rem] font-black uppercase leading-[0.9] tracking-[-0.04em]">
         <span className="rag-pics-title">Send us your rag pics!</span>
       </h3>
       <p className="rag-pics-line">We're ready for your worst! Clogged pumps. Bar screens. Rag hoppers. We want 'em all.</p>
+
+      {!isOpen ? (
+        <button
+          type="button"
+          className="rag-pics-compact-hit"
+          aria-label="Send us your rag pics. Attach a photo or a 6 second video."
+          onClick={() => setChooser(true)}
+        />
+      ) : null}
 
       <form className="rag-pics-actions" onSubmit={onSend}>
         {status === "sent" ? (
