@@ -29,19 +29,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  DailyCostSignal,
   DailyNewsStory,
+  DailyCostSignal,
   clearScrapeCaches,
   fallbackCostSignals,
   fallbackDailyStories,
-  fallbackWildlifeImpactStories,
   getScrapeStatusSnapshot,
   isUsOnlyStory,
-  loadDailyCostSignals,
+  buildTodayCostSignals,
   loadDailyWastewaterStories,
-  loadWeeklyWildlifeImpactStories,
+  readMoneyCardArchive,
+  rememberMoneyCards,
   runScrapeDiagnostics,
-  WildlifeImpactStory,
+  takeUniqueArticles,
 } from "@/lib/dailyNews";
 import { markTaxpayer } from "@/lib/markTaxpayer";
 import { lookupRepresentativesByZip, type Representative } from "@/lib/representatives";
@@ -147,14 +147,32 @@ function mixHeroStories(national: DailyNewsStory[], hawaii: DailyNewsStory[]): D
   const mixed: DailyNewsStory[] = [];
   const seen = new Set<string>();
   const push = (story?: DailyNewsStory) => {
-    if (!story || seen.has(story.url)) return;
-    seen.add(story.url);
+    if (!story) return;
+    const key = `${story.url}::${story.title}`;
+    if (seen.has(key)) return;
+    seen.add(key);
     mixed.push(story);
   };
   const length = Math.max(national.length, hawaii.length);
   for (let index = 0; index < length; index += 1) {
     push(hawaii[index]);
     push(national[index]);
+  }
+  return mixed;
+}
+
+function mixFlaggedWithStanding<T extends { url: string; releasedToday?: boolean }>(fresh: T[], standing: T[]): T[] {
+  const mixed: T[] = [];
+  const seen = new Set<string>();
+  const push = (item?: T) => {
+    if (!item || seen.has(item.url)) return;
+    seen.add(item.url);
+    mixed.push(item);
+  };
+  const length = Math.max(fresh.length, standing.length);
+  for (let index = 0; index < length; index += 1) {
+    push(fresh[index]);
+    push(standing[index]);
   }
   return mixed;
 }
@@ -437,6 +455,7 @@ type CostSectionArticle = {
   blurb: string;
   url: string;
   costAmount: string;
+  releasedToday?: boolean;
 };
 
 const HERO_WARNING_FALLBACK =
@@ -509,6 +528,7 @@ function toCostSectionArticles(stories: DailyNewsStory[]): CostSectionArticle[] 
       blurb: story.summary || "Source-backed reporting on flushable-wipes system and cost impacts.",
       url: story.url,
       costAmount,
+      releasedToday: Boolean(story.releasedToday),
     }));
 }
 
@@ -516,6 +536,38 @@ function ensureSentence(value: string): string {
   const text = value.trim();
   if (!text) return "";
   return /[.!?]$/.test(text) ? text : `${text}.`;
+}
+
+function moneyLaneForText(text: string): DailyCostSignal["lane"] {
+  if (/(downstream|spill|overflow|river|ocean|shore|waterway|contamination)/i.test(text)) return "Downstream impact";
+  if (/(pump|lift station|repair|clog|equipment|maintenance|debris|backup)/i.test(text)) return "Pump repairs";
+  return "Public burden";
+}
+
+function costArticleToMoneyCard(article: CostSectionArticle): DailyCostSignal {
+  return {
+    lane: moneyLaneForText(`${article.category} ${article.title} ${article.blurb}`),
+    amount: article.costAmount,
+    snippet: article.blurb,
+    source: article.source,
+    url: article.url,
+    location: "",
+    title: article.title,
+    releasedToday: Boolean(article.releasedToday),
+  };
+}
+
+function renderMoneyFigures(amount: string) {
+  const parts = amount.split(/(\d[\d,]*(?:\.\d+)?)/);
+  return parts.map((part, index) =>
+    /^\d/.test(part) ? (
+      <span key={`${part}-${index}`} className="flush-accent-word">
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  );
 }
 
 function sourceLogoUrl(sourceUrl?: string): string | null {
@@ -600,11 +652,11 @@ function LiveClock() {
   }).format(now);
 
   return (
-    <div className="live-clock flex w-full min-w-0 items-center justify-between gap-3 xl:w-auto xl:justify-end" aria-label="Live local date and time">
+    <div className="live-clock ml-auto flex w-max max-w-full min-w-0 items-center justify-end gap-2 sm:gap-3" aria-label="Live local date and time">
       <Select value={timeZone} onValueChange={setTimeZone}>
         <SelectTrigger
           size="sm"
-          className="h-8 w-auto min-w-0 max-w-[52%] shrink border-[#6f95c4] bg-white px-2 font-mono text-[10px] font-black uppercase tracking-[0.08em] text-[#87ceeb] shadow-sm hover:border-[#87ceeb] sm:max-w-[16rem] sm:tracking-[0.12em] xl:h-9 xl:max-w-none xl:px-3"
+          className="h-8 w-auto min-w-0 shrink border-[#6f95c4] bg-white px-2 font-mono text-[10px] font-black uppercase tracking-[0.08em] text-[#87ceeb] shadow-sm hover:border-[#87ceeb] sm:tracking-[0.12em] xl:h-9 xl:px-3"
           aria-label="Select timezone for live clock"
         >
           <SelectValue placeholder="Time zone" />
@@ -644,8 +696,8 @@ export default function Home() {
   const fieldImages = useMemo(() => [...thinkBeforeImages, ...officeImages], [officeImages]);
   const [heroStoryIndex, setHeroStoryIndex] = useState(0);
   const [tickerStories, setTickerStories] = useState(defaultTickerStories);
-  const [dailyCostSignals, setDailyCostSignals] = useState<DailyCostSignal[]>(fallbackCostSignals);
-  const [wildlifeImpactStories, setWildlifeImpactStories] = useState<WildlifeImpactStory[]>(fallbackWildlifeImpactStories);
+  const [moneyArchive, setMoneyArchive] = useState<DailyCostSignal[]>(() => readMoneyCardArchive());
+  const [moneyCardIndex, setMoneyCardIndex] = useState(0);
   const [zipCodeInput, setZipCodeInput] = useState("");
   const [repLookupError, setRepLookupError] = useState<string | null>(null);
   const [isRepLookupLoading, setIsRepLookupLoading] = useState(false);
@@ -673,49 +725,56 @@ export default function Home() {
     };
   }, []);
 
+  const { moneyCardBase } = useMemo(() => {
+    const ticker = takeUniqueArticles(tickerStories);
+    const todaySignals = buildTodayCostSignals(ticker);
+    const libraryCards = [
+      ...fallbackCostSectionArticles.filter((article) => isUsOnlyStory(article.title, article.blurb, "United States")),
+      ...toCostSectionArticles(ticker),
+    ].map(costArticleToMoneyCard);
+    const moneyCardBase = takeUniqueArticles([
+      ...todaySignals,
+      ...fallbackCostSignals,
+      ...moneyArchive,
+      ...libraryCards,
+    ]);
+
+    return { moneyCardBase };
+  }, [tickerStories, moneyArchive]);
+
+  const visibleMoneyCards = useMemo(() => {
+    if (moneyCardBase.length === 0) return [];
+    const width = Math.min(3, moneyCardBase.length);
+    return Array.from({ length: width }, (_, offset) => moneyCardBase[(moneyCardIndex + offset) % moneyCardBase.length]);
+  }, [moneyCardBase, moneyCardIndex]);
+
   const {
     uniqueTickerStories,
-    uniqueWildlifeStories,
-    uniqueCostSignals,
     uniqueCostSectionArticles,
   } = useMemo(() => {
-    const dedupeWithinSection = <T extends { url: string }>(items: T[]) => {
-      const seen = new Set<string>();
-      return items.filter((item) => {
-        if (seen.has(item.url)) return false;
-        seen.add(item.url);
-        return true;
-      });
-    };
+    const seen = { urls: new Set<string>(), titles: new Set<string>() };
+    takeUniqueArticles(visibleMoneyCards, seen);
+    const ticker = takeUniqueArticles(tickerStories);
 
-    const ticker = dedupeWithinSection(tickerStories).slice(0, 6);
-    const heroStories = mixHeroStories(ticker, hawaiiHeroStories);
-
-    const wildlifePrimary = dedupeWithinSection(wildlifeImpactStories).slice(0, 3);
-    const wildlifeFill = dedupeWithinSection(fallbackWildlifeImpactStories).slice(0, Math.max(0, 3 - wildlifePrimary.length));
-    const wildlife = [...wildlifePrimary, ...wildlifeFill];
-
-    const costSignalsPrimary = dedupeWithinSection(dailyCostSignals).slice(0, 3);
-    const costSignalsFill = dedupeWithinSection(fallbackCostSignals).slice(0, Math.max(0, 3 - costSignalsPrimary.length));
-    const costSignals = [...costSignalsPrimary, ...costSignalsFill];
-
-    const scrapedCostArticles = dedupeWithinSection(toCostSectionArticles(tickerStories));
-    const fallbackCostArticles = dedupeWithinSection(
-      fallbackCostSectionArticles.filter((article) => isUsOnlyStory(article.title, article.blurb, "United States")),
+    const scrapedCostArticles = toCostSectionArticles(ticker);
+    const standingCostArticles = fallbackCostSectionArticles.filter((article) =>
+      isUsOnlyStory(article.title, article.blurb, "United States"),
     );
-    const combinedCostArticles = [
-      ...scrapedCostArticles,
-      ...fallbackCostArticles.filter((article) => !scrapedCostArticles.some((scraped) => scraped.url === article.url)),
-    ];
-    const ensuredCostArticles = combinedCostArticles.length > 0 ? combinedCostArticles : fallbackCostSectionArticles.slice(0, 1);
+    const combinedCostArticles = takeUniqueArticles(
+      mixFlaggedWithStanding(
+        scrapedCostArticles.filter((article) => article.releasedToday),
+        [...scrapedCostArticles.filter((article) => !article.releasedToday), ...standingCostArticles],
+      ),
+      seen,
+    );
+
+    const heroStories = takeUniqueArticles(mixHeroStories(ticker, hawaiiHeroStories), seen);
 
     return {
-      uniqueTickerStories: heroStories.length > 0 ? heroStories : mixHeroStories(defaultTickerStories, hawaiiHeroStories),
-      uniqueWildlifeStories: wildlife.length > 0 ? wildlife : fallbackWildlifeImpactStories,
-      uniqueCostSignals: costSignals.length > 0 ? costSignals : fallbackCostSignals,
-      uniqueCostSectionArticles: ensuredCostArticles,
+      uniqueTickerStories: heroStories.length > 0 ? heroStories : takeUniqueArticles(mixHeroStories(defaultTickerStories, hawaiiHeroStories), seen),
+      uniqueCostSectionArticles: combinedCostArticles,
     };
-  }, [tickerStories, wildlifeImpactStories, dailyCostSignals]);
+  }, [tickerStories, visibleMoneyCards]);
 
   const costArticleCount = uniqueCostSectionArticles.length;
   const activeHeroStory = uniqueTickerStories[heroStoryIndex] ?? HERO_WARNING_FALLBACK;
@@ -723,6 +782,24 @@ export default function Home() {
     () => sourceLogoUrl(activeHeroStory.sourceUrl),
     [activeHeroStory.sourceUrl],
   );
+
+  useEffect(() => {
+    const fresh = buildTodayCostSignals(tickerStories);
+    if (fresh.length === 0) return;
+    setMoneyArchive(rememberMoneyCards(fresh));
+  }, [tickerStories]);
+
+  useEffect(() => {
+    if (moneyCardBase.length <= 3) return;
+    const timer = window.setInterval(() => {
+      setMoneyCardIndex((index) => (index + 1) % moneyCardBase.length);
+    }, 10000);
+    return () => window.clearInterval(timer);
+  }, [moneyCardBase.length]);
+
+  useEffect(() => {
+    setMoneyCardIndex(0);
+  }, [moneyCardBase.length]);
 
   useEffect(() => {
     if (costArticleCount === 0) return;
@@ -828,34 +905,6 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    let active = true;
-
-    loadWeeklyWildlifeImpactStories().then((stories) => {
-      if (!active) return;
-      setWildlifeImpactStories(stories);
-      console.info("[Flush Report] scrape status", getScrapeStatusSnapshot());
-    });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    loadDailyCostSignals().then((signals) => {
-      if (!active) return;
-      setDailyCostSignals(signals);
-      console.info("[Flush Report] scrape status", getScrapeStatusSnapshot());
-    });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
   return (
       <main className="min-h-screen overflow-hidden bg-white text-[#102a43] selection:bg-[#0b6fa4] selection:text-white dark:bg-[#111827] dark:text-[#e5edf7]">
       <header ref={headerRef} className="site-header fixed inset-x-0 top-0 z-50 border-b border-[#c7d8eb]/80 bg-white/92 shadow-[0_8px_30px_rgba(12,49,92,0.1)] backdrop-blur-xl dark:border-[#2b3950] dark:bg-[#0f172a]/92">
@@ -931,12 +980,18 @@ export default function Home() {
         </div>
       </section>
 
+      <section aria-label="About The Flush Report" className="site-intro px-4 sm:px-6 lg:px-8">
+        <p className="mx-auto max-w-7xl py-4 text-lg font-semibold leading-snug text-[#102a43] sm:py-5 sm:text-xl lg:text-[1.45rem]">
+          {markTaxpayer("The Flush Report is a public news site about what happens after a bad flush. We cover the clogs, spills, and taxpayer bills that start when wipes, rags, grease, and trash go down the toilet.")}
+        </p>
+      </section>
+
       <section id="top" className="hero-scroll-stage relative overflow-hidden bg-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(116,200,214,0.24),transparent_34%),linear-gradient(135deg,#ffffff_0%,#ffffff_48%,#f4fbff_100%)]" aria-hidden="true" />
         <div className="coastal-grid absolute inset-0 opacity-50" aria-hidden="true" />
 
-        <div className="relative z-10 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
-          <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_0.92fr] lg:items-stretch">
+        <div className="relative z-10 px-4 pb-10 pt-2 sm:px-6 lg:px-8">
+          <div className="hero-feature mx-auto grid max-w-7xl items-start gap-8 lg:grid-cols-[1fr_0.92fr] lg:items-stretch">
             <div className="animate-rise-in">
               <h1 className="max-w-6xl font-display text-[clamp(2.85rem,8.2vw,7.8rem)] font-black uppercase leading-[0.8] tracking-[-0.072em] text-[#102a43]">
                 <span className="block">Think</span>
@@ -965,6 +1020,7 @@ export default function Home() {
                   Article: {markTaxpayer(activeHeroStory.title)}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {activeHeroStory.releasedToday ? <span className="today-mark">TODAY</span> : null}
                   <p className="font-mono text-[11px] font-black uppercase tracking-[0.11em] text-[#64748b]">
                     {`By ${activeHeroStory.author || activeHeroStory.source} · ${activeHeroStory.date}`}
                   </p>
@@ -1048,49 +1104,29 @@ export default function Home() {
               Daily Nationwide Coverage Updates
             </h2>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {uniqueCostSignals.map((signal) => (
-              <article key={`${signal.lane}-${signal.url}`} className="stat-card group">
-                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-[#64748b]">{signal.lane}</p>
-                <h3 className="mt-2 font-display text-5xl font-black uppercase leading-none text-[#102a43]">{signal.amount}</h3>
-                {signal.snippet ? <p className="mt-4 text-sm leading-6 text-[#526d82]">{markTaxpayer(signal.snippet)}</p> : null}
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            {visibleMoneyCards.map((signal) => (
+              <article key={`${signal.lane}-${signal.url}-${signal.title}`} className="stat-card group">
+                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-[#64748b]">
+                  {signal.releasedToday ? <span className="today-mark mr-2">TODAY</span> : null}
+                  {signal.lane}
+                </p>
+                {signal.amount ? (
+                  <h3 className="mt-2 font-display text-3xl font-black uppercase leading-none text-white sm:text-5xl">{renderMoneyFigures(signal.amount)}</h3>
+                ) : (
+                  <h3 className="mt-2 font-display text-xl font-black uppercase leading-[0.95] text-white sm:text-2xl">{markTaxpayer(signal.title)}</h3>
+                )}
+                {signal.snippet &&
+                !signal.title.toLowerCase().includes(signal.snippet.toLowerCase()) &&
+                !signal.snippet.toLowerCase().includes(signal.title.toLowerCase()) ? (
+                  <p className="mt-4 text-sm leading-6 text-[#526d82]">{markTaxpayer(signal.snippet)}</p>
+                ) : null}
                 <div className="mt-6 border-t border-[#d6eaf2] pt-3">
-                  {signal.location ? (
+                  {signal.location && !signal.title.toLowerCase().includes(signal.location.toLowerCase()) ? (
                     <p className="font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#64748b]">{signal.location}</p>
                   ) : null}
                   <a
                     href={signal.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="article-read-button mt-2"
-                  >
-                    READ ARTICLE <ArrowRight className="h-3.5 w-3.5" />
-                  </a>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-white px-4 pb-8 sm:px-6 lg:px-8" aria-label="Weekly wildlife impact archive">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid gap-4 md:grid-cols-3">
-            {uniqueWildlifeStories.map((story) => (
-              <article key={story.url} className="news-card p-5">
-                <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#64748b]">
-                  Archive to present · {story.date}
-                </p>
-                <h3 className="mt-3 font-display text-2xl font-black uppercase leading-[0.95] tracking-[-0.02em] text-[#102a43]">
-                  {markTaxpayer(story.title)}
-                </h3>
-                {story.snippet ? <p className="mt-3 text-sm leading-6 text-[#526d82]">{markTaxpayer(story.snippet)}</p> : null}
-                <div className="mt-4 border-t border-[#d6eaf2] pt-3">
-                  {story.location ? (
-                    <p className="font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#64748b]">{story.location}</p>
-                  ) : null}
-                  <a
-                    href={story.url}
                     target="_blank"
                     rel="noreferrer"
                     className="article-read-button mt-2"
@@ -1130,7 +1166,7 @@ export default function Home() {
               <div className="relative min-h-[12.25rem] w-full max-w-[40rem] overflow-hidden rounded-[0.95rem] border border-[#d6eaf2] bg-transparent">
                 {uniqueCostSectionArticles.map((article, index) => (
                   <a
-                    key={article.url}
+                    key={`${article.url}-${article.title}`}
                     href={article.url}
                     target="_blank"
                     rel="noreferrer"
@@ -1155,7 +1191,10 @@ export default function Home() {
                             />
                           ) : null}
                           <div>
-                            <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#bfe4f5]">{article.category}</p>
+                            <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#bfe4f5]">
+                              {article.releasedToday ? <span className="today-mark mr-2">TODAY</span> : null}
+                              {article.category}
+                            </p>
                             <h3 className="mt-2 max-w-xl font-display text-2xl font-black uppercase leading-[0.92] tracking-[-0.02em] text-white">
                               {markTaxpayer(article.title)}
                             </h3>

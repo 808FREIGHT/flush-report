@@ -2,7 +2,7 @@
 // This page should read like a concise wastewater newsroom: white editorial panels,
 // ocean-blue civic accents, source-forward cards, and practical public-works context.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -45,8 +45,6 @@ export default function News() {
     };
   }, []);
 
-  const updatedTodayLabel = useMemo(() => new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }), []);
-
   return (
     <main className="min-h-screen bg-white text-[#102a43] selection:bg-[#0b6fa4] selection:text-white dark:bg-[#111827] dark:text-[#e5edf7]">
       <header className="border-b border-[#cdeaf5] bg-white/95 px-4 py-5 shadow-[0_8px_30px_rgba(12,74,110,0.08)] sm:px-6 lg:px-8 dark:border-[#2b3950] dark:bg-[#0f172a]/95">
@@ -71,19 +69,19 @@ export default function News() {
               <h2 className="headline-section mt-3">Legislation, catastrophes, public warnings, and infrastructure money.</h2>
             </div>
             <p className="max-w-xl text-sm leading-6 text-[#526d82]">
-              The page is intentionally source-forward. Stories are scraped daily from wastewater-related reporting so the Flush Report stays current with real-world alerts, legislation, and infrastructure updates.
+              National stories drop at 10:00am Eastern. The new ones mix into the standing articles and carry a small TODAY mark.
             </p>
-            <p className="max-w-xl font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#64748b]">Daily scrape refresh: {updatedTodayLabel}</p>
+            <p className="max-w-xl font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#64748b]">National drop: 10:00am ET</p>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            {newsItems.map((item, index) => {
+            {newsItems.map((item) => {
               const Icon = iconForCategory(item.category);
               return (
-                <article key={item.url} className="wastewater-news-card group">
+                <article key={`${item.url}-${item.title}`} className="wastewater-news-card group">
                   <div className="flex items-start justify-between gap-5">
                     <div className="flex flex-wrap items-center gap-2">
-                      {index === 0 ? <span className="lower-third">Most recent</span> : null}
+                      {item.releasedToday ? <span className="today-mark">TODAY</span> : null}
                       <span className="lower-third">{item.category}</span>
                       {item.location ? <span className="location-chip">{item.location}</span> : null}
                     </div>

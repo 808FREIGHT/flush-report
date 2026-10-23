@@ -9,6 +9,7 @@ export type DailyNewsStory = {
   category: string;
   location: string;
   ogImage?: string;
+  releasedToday?: boolean;
 };
 
 export type DailyCostSignal = {
@@ -20,6 +21,7 @@ export type DailyCostSignal = {
   location: string;
   title: string;
   ogImage?: string;
+  releasedToday?: boolean;
 };
 
 export type WildlifeImpactStory = {
@@ -33,7 +35,7 @@ export type WildlifeImpactStory = {
   ogImage?: string;
 };
 
-const CACHE_KEY = "flush-report-daily-news-v6";
+const CACHE_KEY = "flush-report-daily-news-v7";
 const WILDLIFE_CACHE_KEY = "flush-report-weekly-wildlife-archive-v4";
 const OG_IMAGE_CACHE_KEY = "flush-report-og-image-cache-v1";
 const SCRAPE_STATUS_KEY = "flush-report-scrape-status-v1";
@@ -41,8 +43,9 @@ const ACCESS_CHECK_CACHE_KEY = "flush-report-article-access-cache-v1";
 const NEWS_LIMIT = 18;
 export const SITE_REGION_LOCK = "US_ONLY";
 const MIN_WEEKLY_WILDLIFE_STORIES = 3;
-const DAILY_SCRAPE_CUTOFF_HOUR = 8;
-const DAILY_SCRAPE_CUTOFF_MINUTE = 30;
+const DAILY_SCRAPE_TIME_ZONE = "America/New_York";
+const DAILY_SCRAPE_CUTOFF_HOUR = 10;
+const DAILY_SCRAPE_CUTOFF_MINUTE = 0;
 
 type ScrapeSource = "live" | "cache" | "fallback";
 type ScrapeTarget = "dailyStories" | "weeklyWildlife" | "dailyCostSignals";
@@ -68,14 +71,6 @@ type AccessCheckCache = Record<
     reason?: string;
   }
 >;
-
-function resolvedUserTimeZone(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-  } catch {
-    return "UTC";
-  }
-}
 
 function localDateTimePartsForZone(date: Date, timeZone: string): {
   year: number;
@@ -122,7 +117,7 @@ function pad2(value: number): string {
   return String(value).padStart(2, "0");
 }
 
-function dailyScrapeCycleKey(timeZone = resolvedUserTimeZone()): string {
+function dailyScrapeCycleKey(timeZone = DAILY_SCRAPE_TIME_ZONE): string {
   const now = new Date();
   const local = localDateTimePartsForZone(now, timeZone);
   const isBeforeCutoff =
@@ -542,7 +537,7 @@ function extractLocation(title: string, summary: string): string {
   return "";
 }
 
-function extractDollarAmount(text: string): string | null {
+export function extractDollarAmount(text: string): string | null {
   const dollarMatch = text.match(/\$\s?\d[\d,]*(?:\.\d+)?\s?(?:[KMBT]|million|billion|trillion)?(?:\/yr|\/year)?/i);
   if (dollarMatch) {
     return dollarMatch[0].replace(/\s+/g, "").replace("million", "M").replace("billion", "B").replace("trillion", "T");
@@ -763,6 +758,134 @@ async function fetchOgImageUrl(articleUrl: string): Promise<string | null> {
   }
 }
 
+export function normalizeArticleUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.hostname.replace(/^www\./, "")}${parsed.pathname.replace(/\/$/, "")}`.toLowerCase();
+  } catch {
+    return url.trim().toLowerCase();
+  }
+}
+
+export function normalizeArticleTitle(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+export function sameArticle(a: { url: string; title: string }, b: { url: string; title: string }): boolean {
+  const urlA = normalizeArticleUrl(a.url);
+  const urlB = normalizeArticleUrl(b.url);
+  if (urlA && urlB && urlA === urlB) return true;
+  const titleA = normalizeArticleTitle(a.title);
+  const titleB = normalizeArticleTitle(b.title);
+  return Boolean(titleA && titleB && titleA === titleB);
+}
+
+export function takeUniqueArticles<T extends { url: string; title: string }>(
+  items: T[],
+  seen: { urls: Set<string>; titles: Set<string> } = { urls: new Set(), titles: new Set() },
+): T[] {
+  const picked: T[] = [];
+  for (const item of items) {
+    const url = normalizeArticleUrl(item.url);
+    const title = normalizeArticleTitle(item.title);
+    if ((url && seen.urls.has(url)) || (title && seen.titles.has(title))) continue;
+    if (url) seen.urls.add(url);
+    if (title) seen.titles.add(title);
+    picked.push(item);
+  }
+  return picked;
+}
+
+const moneyLanes: Array<{
+  lane: DailyCostSignal["lane"];
+  matcher: RegExp;
+}> = [
+  { lane: "Pump repairs", matcher: /(pump|lift station|repair|clog|equipment|maintenance|debris|backup)/i },
+  { lane: "Public burden", matcher: /(ratepayer|taxpayer|budget|grant|funding|cost|money|utility)/i },
+  { lane: "Downstream impact", matcher: /(downstream|spill|overflow|river|ocean|shore|waterway|contamination)/i },
+];
+
+export function buildTodayCostSignals(stories: DailyNewsStory[]): DailyCostSignal[] {
+  const signals: DailyCostSignal[] = [];
+  const used: DailyNewsStory[] = [];
+
+  for (const lane of moneyLanes) {
+    const matches = stories.filter((story) => {
+      if (!story.releasedToday) return false;
+      if (used.some((item) => sameArticle(item, story))) return false;
+      const haystack = `${story.title} ${story.summary} ${story.category} ${story.location}`;
+      return lane.matcher.test(haystack) || (lane.lane === "Public burden" && /infrastructure money/i.test(story.category));
+    });
+
+    for (const match of matches) {
+      used.push(match);
+      const haystack = `${match.title} ${match.summary}`;
+      signals.push({
+        lane: lane.lane,
+        amount: extractDollarAmount(haystack) ?? "",
+        snippet: match.summary,
+        source: match.source,
+        url: match.url,
+        location: match.location,
+        title: match.title,
+        releasedToday: true,
+      });
+    }
+  }
+
+  return signals;
+}
+
+const MONEY_CARD_BASE_KEY = "flush-report-money-card-base-v1";
+const MONEY_CARD_BASE_LIMIT = 24;
+
+export function readMoneyCardArchive(): DailyCostSignal[] {
+  try {
+    const raw = localStorage.getItem(MONEY_CARD_BASE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as DailyCostSignal[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function rememberMoneyCards(incoming: DailyCostSignal[]): DailyCostSignal[] {
+  const archived = incoming.map((card) => ({ ...card, releasedToday: false }));
+  const next = takeUniqueArticles([...archived, ...readMoneyCardArchive()]).slice(0, MONEY_CARD_BASE_LIMIT);
+  try {
+    localStorage.setItem(MONEY_CARD_BASE_KEY, JSON.stringify(next));
+  } catch {
+    // Ignore archive write failures.
+  }
+  return next;
+}
+
+function withStandingLibrary(released: DailyNewsStory[]): DailyNewsStory[] {
+  const fresh = released
+    .filter((story) => story.url && !fallbackDailyStories.some((standing) => sameArticle(standing, story)))
+    .map((story) => ({ ...story, releasedToday: true }));
+  const standing = fallbackDailyStories.map((story) => ({ ...story, releasedToday: false }));
+  const mixed: DailyNewsStory[] = [];
+  const push = (story?: DailyNewsStory) => {
+    if (!story || mixed.some((item) => sameArticle(item, story))) return;
+    mixed.push(story);
+  };
+
+  for (const lane of newsLanes) {
+    const laneFresh = fresh.filter((story) => story.category === lane.category);
+    const laneStanding = standing.filter((story) => story.category === lane.category);
+    const length = Math.max(laneFresh.length, laneStanding.length);
+    for (let index = 0; index < length; index += 1) {
+      push(laneFresh[index]);
+      push(laneStanding[index]);
+    }
+  }
+
+  for (const story of [...fresh, ...standing]) push(story);
+  return mixed;
+}
+
 export async function loadOgImageMap(articleUrls: string[]): Promise<Record<string, string>> {
   const uniqueUrls = Array.from(new Set(articleUrls.filter((url) => isHttpUrl(url))));
   if (uniqueUrls.length === 0) return {};
@@ -810,9 +933,9 @@ export async function loadDailyWastewaterStories(options: { forceLive?: boolean 
       intervalKey: dayKey,
       lastAttemptAt: nowIso,
       lastSuccessAt: nowIso,
-      note: "Using same-day cached story scrape.",
+      note: "Using the 10:00am Eastern national drop already saved for this cycle.",
     });
-    return cached;
+    return withStandingLibrary(cached);
   }
 
   try {
@@ -832,17 +955,16 @@ export async function loadDailyWastewaterStories(options: { forceLive?: boolean 
     const accessibleTopStories = await filterAccessibleByUrl(topStories);
 
     if (accessibleTopStories.length === 0) {
-      const accessibleFallback = await filterAccessibleByUrl(fallbackDailyStories);
       updateScrapeStatus("dailyStories", {
         interval: "daily",
         source: "fallback",
-        itemCount: accessibleFallback.length,
+        itemCount: fallbackDailyStories.length,
         intervalKey: dayKey,
         lastAttemptAt: nowIso,
         lastFailureAt: nowIso,
-        note: "Live scrape returned no accessible qualifying stories; serving accessible fallback.",
+        note: "10:00am Eastern search found no new national stories. Standing articles stay up.",
       });
-      return accessibleFallback;
+      return withStandingLibrary([]);
     }
 
     writeCache(accessibleTopStories);
@@ -853,21 +975,20 @@ export async function loadDailyWastewaterStories(options: { forceLive?: boolean 
       intervalKey: dayKey,
       lastAttemptAt: nowIso,
       lastSuccessAt: nowIso,
-      note: "Live scrape succeeded with accessible URLs and cache was refreshed.",
+      note: "10:00am Eastern national drop mixed into the standing articles.",
     });
-    return accessibleTopStories;
+    return withStandingLibrary(accessibleTopStories);
   } catch {
-    const accessibleFallback = await filterAccessibleByUrl(fallbackDailyStories);
     updateScrapeStatus("dailyStories", {
       interval: "daily",
       source: "fallback",
-      itemCount: accessibleFallback.length,
+      itemCount: fallbackDailyStories.length,
       intervalKey: dayKey,
       lastAttemptAt: nowIso,
       lastFailureAt: nowIso,
-      note: "Live scrape request failed; serving accessible fallback.",
+      note: "10:00am Eastern search failed. Standing articles stay up.",
     });
-    return accessibleFallback;
+    return withStandingLibrary([]);
   }
 }
 
@@ -896,22 +1017,25 @@ export async function loadDailyCostSignals(options: { forceLive?: boolean } = {}
     const signals: DailyCostSignal[] = [];
 
     for (const pool of pools) {
-      const match = stories.find((story) => {
+      const matchesLane = (story: DailyNewsStory, todayOnly: boolean) => {
         if (usedUrls.has(story.url)) return false;
+        if (todayOnly && !story.releasedToday) return false;
         const haystack = `${story.title} ${story.summary} ${story.category} ${story.location}`;
-        return pool.matcher.test(haystack) && Boolean(extractDollarAmount(haystack));
-      });
+        return pool.matcher.test(haystack);
+      };
+      const match = stories.find((story) => matchesLane(story, true)) ?? stories.find((story) => matchesLane(story, false));
 
       if (match) {
         const haystack = `${match.title} ${match.summary}`;
         signals.push({
           lane: pool.lane,
-          amount: extractDollarAmount(haystack) ?? "$—",
+          amount: extractDollarAmount(haystack) ?? "",
           snippet: match.summary,
           source: match.source,
           url: match.url,
           location: match.location,
           title: match.title,
+          releasedToday: Boolean(match.releasedToday),
         });
         usedUrls.add(match.url);
       } else {

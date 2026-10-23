@@ -1,0 +1,16 @@
+---
+description: Render every visible taxpayer or taxpayers in caps, bold, and neon green
+alwaysApply: true
+---
+
+# Taxpayer green
+
+Every visible `taxpayer` or `taxpayers` on The Flush Report is neon green `#39ff14` (`--live-green`), all caps, one step bolder than the sentence around it (`font-weight: 700`), and given a small drop shadow (`text-shadow: 2px 3px 0 #1f7a12`). The rest of the sentence stays the normal text color and case.
+
+Pass user-facing copy through `markTaxpayer()` from `client/src/lib/markTaxpayer.tsx`. It wraps the word in `<span className="taxpayer-word">`. The caps, weight, and color live on that class. Do not recolor the word by hand, and do not skip the helper for headlines, cards, intros, or article text.
+
+```tsx
+{markTaxpayer("Those repairs land on the taxpayer.")}
+```
+
+Leave the word alone in code that is not shown to readers: scoring regexes, meta descriptions, comments, and docs.

@@ -1046,6 +1046,23 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     color: #003b75;
   }
 
+  .today-mark,
+  .dark .today-mark,
+  .dark span.today-mark {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #39ff14;
+    border-radius: 0.25rem;
+    background: #102a43;
+    padding: 0.08rem 0.38rem;
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    line-height: 1.4;
+    color: #39ff14 !important;
+  }
+
   .location-chip {
     display: inline-flex;
     align-items: center;
@@ -1189,6 +1206,16 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   .dark a .taxpayer-word,
   .dark strong .taxpayer-word {
     color: var(--live-green) !important;
+    font-weight: 700;
+    text-shadow: 2px 3px 0 #1f7a12;
+    text-transform: uppercase;
+  }
+
+  h1 .taxpayer-word,
+  h2 .taxpayer-word,
+  h3 .taxpayer-word,
+  .font-black .taxpayer-word {
+    font-weight: 900;
   }
 
   .dark .text-outline {
