@@ -930,7 +930,7 @@ export default function Home() {
 
       <section aria-label="About The Flush Report" className="site-intro px-4 sm:px-6 lg:px-8">
         <p className="mx-auto max-w-7xl py-4 text-lg font-semibold leading-snug text-[#102a43] sm:py-5 sm:text-xl lg:text-[1.45rem]">
-          {markTaxpayer("The Flush Report is a public news site about what happens after a bad flush. We cover the clogs, spills, and taxpayer bills that start when ")}
+          The <span className="flush-accent-word">Flush</span>{markTaxpayer(" Report is a public news site about what happens after a bad flush. We cover the clogs, spills, and taxpayer bills that start when ")}
           <span className="flush-accent-word">flushable</span>
           {markTaxpayer(" wipes, rags, grease, and trash go down the toilet.")}
         </p>
