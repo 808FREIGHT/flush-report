@@ -642,13 +642,13 @@ function LiveClock() {
   return (
     <div className="live-clock ml-auto flex max-w-full min-w-0 flex-col items-end justify-center gap-1 sm:flex-row sm:items-center sm:gap-2.5" aria-label="Live local date and time">
       <div className="flex min-w-0 max-w-full items-center gap-1.5">
-        <span className="shrink-0 font-display text-[0.68rem] font-black uppercase leading-none tracking-[0.03em] text-[#87ceeb] sm:text-sm sm:tracking-[0.05em] xl:text-base xl:tracking-[0.08em]">
+        <span className="shrink-0 font-display text-[0.75rem] font-black uppercase leading-none tracking-[0.03em] text-[#87ceeb] sm:text-base sm:tracking-[0.05em] xl:text-lg xl:tracking-[0.06em]">
           Timezone:
         </span>
         <Select value={timeZone} onValueChange={setTimeZone}>
           <SelectTrigger
             size="sm"
-            className="h-7 w-auto max-w-full min-w-0 shrink border-[#6f95c4] bg-white px-2 font-mono text-[10px] font-black uppercase tracking-[0.06em] text-[#87ceeb] shadow-sm hover:border-[#87ceeb] sm:h-8 sm:tracking-[0.1em] xl:h-9 xl:px-3"
+            className="h-8 w-auto max-w-full min-w-0 shrink border-[#6f95c4] bg-white px-2 font-mono text-[10px] font-black uppercase tracking-[0.06em] text-[#87ceeb] shadow-sm hover:border-[#87ceeb] sm:h-9 sm:tracking-[0.1em] xl:h-10 xl:px-3"
             aria-label="Select timezone for live clock"
           >
             <SelectValue placeholder="Select" />
@@ -664,7 +664,7 @@ function LiveClock() {
       </div>
       <time
         dateTime={now.toISOString()}
-        className="flex min-w-0 items-baseline gap-1 text-right font-display text-[0.68rem] font-black uppercase leading-none tracking-[0.03em] text-[#87ceeb] sm:text-sm sm:tracking-[0.05em] xl:text-base xl:tracking-[0.08em]"
+        className="flex min-w-0 items-baseline gap-1 text-right font-display text-[0.75rem] font-black uppercase leading-none tracking-[0.03em] text-[#87ceeb] sm:text-base sm:tracking-[0.05em] xl:text-lg xl:tracking-[0.06em]"
       >
         <span className="whitespace-nowrap">{dateLine}</span>
         <span className="whitespace-nowrap">{timeLine}</span>
@@ -911,7 +911,7 @@ export default function Home() {
   return (
       <main className="min-h-screen overflow-hidden bg-white text-[#102a43] selection:bg-[#0b6fa4] selection:text-white dark:bg-[#111827] dark:text-[#e5edf7]">
       <header ref={headerRef} className="site-header fixed inset-x-0 top-0 z-50 border-b border-[#c7d8eb]/80 bg-white/92 shadow-[0_8px_30px_rgba(12,49,92,0.1)] backdrop-blur-xl dark:border-[#2b3950] dark:bg-[#0f172a]/92">
-          <div className="site-header__bar flex min-h-14 items-center justify-between gap-2 px-3 py-2 sm:min-h-16 sm:gap-4 sm:px-6 sm:py-2.5 lg:px-8">
+          <div className="site-header__bar flex min-h-[4.4rem] items-center justify-between gap-2 px-3 py-2.5 sm:min-h-20 sm:gap-4 sm:px-6 sm:py-3.5 lg:px-8">
           <a href="#top" className="site-header__brand group flex min-w-0 flex-1 items-center overflow-hidden" aria-label="The Flush Report home">
             <div className="retro-news-logo">
               <span className="retro-news-logo__channel" aria-label="TFR LIVE channel badge">
