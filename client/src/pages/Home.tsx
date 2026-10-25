@@ -3,7 +3,7 @@
 // editorial surfaces, ocean blue backgrounds, sea-glass accents, calm broadcast structure, and a
 // soulful Hawaii-origin mission centered on consumer accountability rather than corporate shaming.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   BadgeDollarSign,
@@ -607,6 +607,47 @@ function formatTermEnd(value: string | null): string {
   return `Term ends ${parsed.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}`;
 }
 
+function BrandTitle() {
+  const flushLineRef = useRef<HTMLSpanElement>(null);
+  const reportRef = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const flushLine = flushLineRef.current;
+    const report = reportRef.current;
+    if (!flushLine || !report) return;
+
+    const syncReportWidth = () => {
+      report.style.transform = "none";
+      const flushWidth = flushLine.getBoundingClientRect().width;
+      const reportWidth = report.getBoundingClientRect().width;
+      if (flushWidth <= 0 || reportWidth <= 0) return;
+      report.style.transform = `scaleX(${flushWidth / reportWidth})`;
+    };
+
+    syncReportWidth();
+    const observer = new ResizeObserver(syncReportWidth);
+    observer.observe(flushLine);
+    window.addEventListener("resize", syncReportWidth);
+    void document.fonts?.ready?.then(syncReportWidth);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", syncReportWidth);
+    };
+  }, []);
+
+  return (
+    <span className="retro-news-logo__title">
+      <span ref={flushLineRef} className="retro-news-logo__flush-line">
+        THE <span className="flush-accent-word">FLUSH</span>
+      </span>
+      <span ref={reportRef} className="retro-news-logo__report">
+        REPORT
+      </span>
+    </span>
+  );
+}
+
 export default function Home() {
   const [costSlideIndex, setCostSlideIndex] = useState(0);
   const [costPhotoSlideIndex, setCostPhotoSlideIndex] = useState(0);
@@ -844,12 +885,7 @@ export default function Home() {
               <span className="retro-news-logo__channel" aria-label="TFR LIVE channel badge">
                 <img src="/tfr-logo-transparent-v1.png" alt="" className="retro-news-logo__exact" aria-hidden="true" />
               </span>
-              <span className="retro-news-logo__title">
-                <span className="block sm:inline">
-                  THE <span className="flush-accent-word">FLUSH</span>
-                </span>{" "}
-                <span className="block sm:inline">REPORT</span>
-              </span>
+              <BrandTitle />
             </div>
           </a>
         </div>
