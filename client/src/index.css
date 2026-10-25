@@ -586,8 +586,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     }
 
     .live-clock [data-slot="select-trigger"] {
-      width: 100%;
-      max-width: 100%;
+      max-width: 7.25rem;
       justify-content: space-between;
       padding-left: 0.4rem;
       padding-right: 0.3rem;

@@ -641,25 +641,27 @@ function LiveClock() {
 
   return (
     <div className="live-clock ml-auto flex max-w-full min-w-0 flex-col items-end justify-center gap-1 sm:flex-row sm:items-center sm:gap-2.5" aria-label="Live local date and time">
-      <Select value={timeZone} onValueChange={setTimeZone}>
-        <SelectTrigger
-          size="sm"
-          className="h-7 w-auto max-w-full min-w-0 shrink border-[#6f95c4] bg-white px-2 font-mono text-[10px] font-black uppercase tracking-[0.06em] text-[#87ceeb] shadow-sm hover:border-[#87ceeb] sm:h-8 sm:tracking-[0.1em] xl:h-9 xl:px-3"
-          aria-label="Select timezone for live clock"
-        >
-          <span className="inline-flex min-w-0 items-center gap-1 overflow-hidden">
-            <span className="shrink-0">Timezone:</span>
+      <div className="flex min-w-0 max-w-full items-center gap-1.5">
+        <span className="shrink-0 font-display text-[0.68rem] font-black uppercase leading-none tracking-[0.03em] text-[#87ceeb] sm:text-sm sm:tracking-[0.05em] xl:text-base xl:tracking-[0.08em]">
+          Timezone:
+        </span>
+        <Select value={timeZone} onValueChange={setTimeZone}>
+          <SelectTrigger
+            size="sm"
+            className="h-7 w-auto max-w-full min-w-0 shrink border-[#6f95c4] bg-white px-2 font-mono text-[10px] font-black uppercase tracking-[0.06em] text-[#87ceeb] shadow-sm hover:border-[#87ceeb] sm:h-8 sm:tracking-[0.1em] xl:h-9 xl:px-3"
+            aria-label="Select timezone for live clock"
+          >
             <SelectValue placeholder="Select" />
-          </span>
-        </SelectTrigger>
-        <SelectContent align="end" className="border-[#c7d8eb] bg-white text-[#102a43]">
-          {timeZoneOptions.map((zone) => (
-            <SelectItem key={zone.value} value={zone.value} className="font-mono text-xs uppercase tracking-[0.08em]">
-              {zone.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+          </SelectTrigger>
+          <SelectContent align="end" className="border-[#c7d8eb] bg-white text-[#102a43]">
+            {timeZoneOptions.map((zone) => (
+              <SelectItem key={zone.value} value={zone.value} className="font-mono text-xs uppercase tracking-[0.08em]">
+                {zone.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <time
         dateTime={now.toISOString()}
         className="flex min-w-0 items-baseline gap-1 text-right font-display text-[0.68rem] font-black uppercase leading-none tracking-[0.03em] text-[#87ceeb] sm:text-sm sm:tracking-[0.05em] xl:text-base xl:tracking-[0.08em]"
