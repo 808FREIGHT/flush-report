@@ -611,7 +611,9 @@ function BrandTitle() {
   const scalerRef = useRef<HTMLSpanElement>(null);
   const flushLineRef = useRef<HTMLSpanElement>(null);
   const reportRef = useRef<HTMLSpanElement>(null);
-  const BRAND_WIDTH_SCALE = 1.5625;
+  // Cumulative glyph scale from natural size: prior widens + another 25% width/height.
+  const BRAND_WIDTH_SCALE = 1.5625 * 1.25;
+  const BRAND_HEIGHT_SCALE = 1.25;
 
   useLayoutEffect(() => {
     const scaler = scalerRef.current;
@@ -627,9 +629,9 @@ function BrandTitle() {
       const reportWidth = report.getBoundingClientRect().width;
       if (flushWidth <= 0 || reportWidth <= 0) return;
 
-      // Widen REPORT glyphs to match THE FLUSH, then widen the whole lockup 25%.
+      // Widen REPORT glyphs to match THE FLUSH, then scale the lockup.
       report.style.transform = `scaleX(${flushWidth / reportWidth})`;
-      scaler.style.transform = `scaleX(${BRAND_WIDTH_SCALE})`;
+      scaler.style.transform = `scale(${BRAND_WIDTH_SCALE}, ${BRAND_HEIGHT_SCALE})`;
     };
 
     syncBrandWidth();
