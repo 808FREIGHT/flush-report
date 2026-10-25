@@ -510,9 +510,9 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     align-items: center;
     justify-content: center;
     position: relative;
-    width: 3.55rem;
-    min-width: 3.55rem;
-    height: 4.45rem;
+    width: 4.1rem;
+    min-width: 4.1rem;
+    height: 5.1rem;
     border: none;
     border-radius: 0;
     overflow: visible;
@@ -544,7 +544,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   .retro-news-logo__title {
     color: #f8fbff;
     font-family: var(--font-display);
-    font-size: clamp(1.5rem, 5.2vw, 2.95rem);
+    font-size: clamp(1.75rem, 6vw, 3.4rem);
     font-weight: 900;
     letter-spacing: -0.052em;
     word-spacing: 0.02em;
@@ -554,24 +554,24 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   }
 
   .site-header-spacer {
-    height: var(--site-header-height, 9.7rem);
+    height: var(--site-header-height, 11.15rem);
   }
 
   @media (max-width: 639px) {
     .retro-news-logo {
-      gap: 0.5rem;
+      gap: 0.55rem;
       min-width: 0;
       max-width: 100%;
     }
 
     .retro-news-logo__channel {
-      width: 3.35rem;
-      min-width: 3.35rem;
-      height: 4.25rem;
+      width: 3.85rem;
+      min-width: 3.85rem;
+      height: 4.9rem;
     }
 
     .retro-news-logo__title {
-      font-size: clamp(1.45rem, 6.5vw, 1.85rem);
+      font-size: clamp(1.65rem, 7.5vw, 2.15rem);
       letter-spacing: -0.052em;
       word-spacing: 0.02em;
     }
@@ -586,11 +586,11 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     }
 
     .live-clock [data-slot="select-trigger"] {
-      max-width: 7.25rem;
+      max-width: 8.35rem;
       justify-content: space-between;
-      padding-left: 0.4rem;
-      padding-right: 0.3rem;
-      font-size: 0.56rem;
+      padding-left: 0.45rem;
+      padding-right: 0.35rem;
+      font-size: 0.64rem;
       letter-spacing: 0.03em;
     }
 
@@ -612,14 +612,14 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
 
   @media (min-width: 640px) {
     .retro-news-logo__channel {
-      width: 3.7rem;
-      min-width: 3.7rem;
-      height: 4.65rem;
+      width: 4.25rem;
+      min-width: 4.25rem;
+      height: 5.35rem;
     }
 
     .retro-news-logo__title {
       display: block;
-      font-size: clamp(2.15rem, 4.2vw, 2.7rem);
+      font-size: clamp(2.45rem, 4.8vw, 3.1rem);
       letter-spacing: -0.052em;
       word-spacing: 0.02em;
       white-space: nowrap;
@@ -632,17 +632,17 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
 
   @media (min-width: 1280px) {
     .retro-news-logo {
-      gap: 0.75rem;
+      gap: 0.85rem;
     }
 
     .retro-news-logo__channel {
-      width: 3.9rem;
-      min-width: 3.9rem;
-      height: 4.85rem;
+      width: 4.5rem;
+      min-width: 4.5rem;
+      height: 5.6rem;
     }
 
     .retro-news-logo__title {
-      font-size: clamp(2.7rem, 3vw, 3rem);
+      font-size: clamp(3.1rem, 3.4vw, 3.45rem);
       letter-spacing: -0.052em;
       word-spacing: 0.02em;
     }
