@@ -7,20 +7,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   BadgeDollarSign,
-  Camera,
   Factory,
   Gauge,
   Landmark,
-  Newspaper,
   Recycle,
   ShieldAlert,
-  ShoppingBag,
   Zap,
   Waves,
 } from "lucide-react";
 import { FaFacebookF, FaInstagram, FaTiktok, FaXTwitter, FaYoutube } from "react-icons/fa6";
 import { SiThreads } from "react-icons/si";
-import RagPicsCard from "@/components/RagPicsCard";
 import {
   Select,
   SelectContent,
@@ -209,39 +205,6 @@ const timeZoneOptions = [
   { label: "Mountain", value: "America/Denver" },
   { label: "Central", value: "America/Chicago" },
   { label: "Eastern", value: "America/New_York" },
-];
-
-// Social Media and Merch stay parked until those lanes are live. Set parked to false to show them again.
-const featurePills = [
-  {
-    title: "Daily News",
-    eyebrow: "Latest coverage",
-    copy: "Source-backed wastewater news, laws, system failures, and public warnings.",
-    href: "/news",
-    action: "Read the latest",
-    icon: Newspaper,
-    neonTitle: true,
-    parked: false,
-  },
-  {
-    title: "Social Media",
-    eyebrow: "The Flush Report",
-    copy: "Video features open soon.",
-    href: null,
-    action: "Coming soon",
-    icon: Camera,
-    showSocialIcons: true,
-    parked: true,
-  },
-  {
-    title: "Merch",
-    eyebrow: "Latest gear",
-    copy: "Shirts, hats, and stickers are on the way.",
-    href: null,
-    action: "Coming soon",
-    icon: ShoppingBag,
-    parked: true,
-  },
 ];
 
 const adPlacements = {
@@ -677,14 +640,14 @@ function LiveClock() {
   }).format(now);
 
   return (
-    <div className="live-clock ml-auto flex w-max max-w-full min-w-0 items-center justify-end gap-2 sm:gap-3" aria-label="Live local date and time">
+    <div className="live-clock ml-auto flex max-w-full min-w-0 flex-col items-end justify-center gap-1 sm:flex-row sm:items-center sm:gap-2.5" aria-label="Live local date and time">
       <Select value={timeZone} onValueChange={setTimeZone}>
         <SelectTrigger
           size="sm"
-          className="h-8 w-auto min-w-0 shrink border-[#6f95c4] bg-white px-2 font-mono text-[10px] font-black uppercase tracking-[0.08em] text-[#87ceeb] shadow-sm hover:border-[#87ceeb] sm:tracking-[0.12em] xl:h-9 xl:px-3"
+          className="h-7 w-auto max-w-full min-w-0 shrink border-[#6f95c4] bg-white px-2 font-mono text-[10px] font-black uppercase tracking-[0.06em] text-[#87ceeb] shadow-sm hover:border-[#87ceeb] sm:h-8 sm:tracking-[0.1em] xl:h-9 xl:px-3"
           aria-label="Select timezone for live clock"
         >
-          <span className="inline-flex min-w-0 items-center gap-1">
+          <span className="inline-flex min-w-0 items-center gap-1 overflow-hidden">
             <span className="shrink-0">Timezone:</span>
             <SelectValue placeholder="Select" />
           </span>
@@ -699,10 +662,9 @@ function LiveClock() {
       </Select>
       <time
         dateTime={now.toISOString()}
-        className="flex min-w-0 flex-col items-end text-right font-display text-[0.72rem] font-black uppercase leading-none tracking-[0.03em] text-[#87ceeb] sm:flex-row sm:items-baseline sm:gap-1 sm:text-sm sm:tracking-[0.05em] xl:text-base xl:tracking-[0.08em]"
+        className="flex min-w-0 items-baseline gap-1 text-right font-display text-[0.68rem] font-black uppercase leading-none tracking-[0.03em] text-[#87ceeb] sm:text-sm sm:tracking-[0.05em] xl:text-base xl:tracking-[0.08em]"
       >
         <span className="whitespace-nowrap">{dateLine}</span>
-        <span className="hidden sm:inline" aria-hidden="true"> </span>
         <span className="whitespace-nowrap">{timeLine}</span>
       </time>
     </div>
@@ -947,14 +909,17 @@ export default function Home() {
   return (
       <main className="min-h-screen overflow-hidden bg-white text-[#102a43] selection:bg-[#0b6fa4] selection:text-white dark:bg-[#111827] dark:text-[#e5edf7]">
       <header ref={headerRef} className="site-header fixed inset-x-0 top-0 z-50 border-b border-[#c7d8eb]/80 bg-white/92 shadow-[0_8px_30px_rgba(12,49,92,0.1)] backdrop-blur-xl dark:border-[#2b3950] dark:bg-[#0f172a]/92">
-          <div className="site-header__bar flex min-h-14 items-center justify-between gap-3 px-4 py-2.5 sm:min-h-16 sm:gap-4 sm:px-6 lg:px-8">
-          <a href="#top" className="site-header__brand group flex min-w-0 flex-1 items-center" aria-label="The Flush Report home">
+          <div className="site-header__bar flex min-h-14 items-center justify-between gap-2 px-3 py-2 sm:min-h-16 sm:gap-4 sm:px-6 sm:py-2.5 lg:px-8">
+          <a href="#top" className="site-header__brand group flex min-w-0 flex-1 items-center overflow-hidden" aria-label="The Flush Report home">
             <div className="retro-news-logo">
               <span className="retro-news-logo__channel" aria-label="TFR LIVE channel badge">
                 <img src="/tfr-logo-transparent-v1.png" alt="" className="retro-news-logo__exact" aria-hidden="true" />
               </span>
               <span className="retro-news-logo__title">
-                THE <span className="flush-accent-word">FLUSH</span> REPORT
+                <span className="block">
+                  THE <span className="flush-accent-word">FLUSH</span>
+                </span>
+                <span className="block">REPORT</span>
               </span>
             </div>
           </a>
@@ -973,58 +938,6 @@ export default function Home() {
           <span className="flush-accent-word">flushable</span>
           {markTaxpayer(" wipes, rags, grease, and trash go down the toilet.")}
         </p>
-      </section>
-
-      <section aria-label="Quick access to Flush Report features" className="quick-access-shell relative z-20 border-b border-[#cdeaf5] bg-white px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl pb-2 pt-2">
-          <div className="quick-cards">
-            {featurePills.filter((feature) => !feature.parked).map((feature) => {
-              const content = (
-                <div className="flex h-full flex-col">
-                  <h3
-                    className={`${
-                      "neonTitle" in feature && feature.neonTitle
-                        ? "font-display text-[1.15rem] font-black uppercase leading-none tracking-[-0.03em]"
-                        : "font-display text-[1.02rem] font-black uppercase leading-none tracking-[-0.02em] text-[#102a43]"
-                    }`}
-                  >
-                    <span className={"neonTitle" in feature && feature.neonTitle ? "live-flash-text" : undefined}>{markTaxpayer(feature.title)}</span>
-                    {"neonTitle" in feature && feature.neonTitle ? (
-                      <Zap className="live-bolt live-bolt--card ml-1 hidden align-middle lg:inline-block" aria-hidden="true" />
-                    ) : null}
-                  </h3>
-                  <p className={"neonTitle" in feature && feature.neonTitle ? "mt-1 text-[0.82rem] font-extrabold leading-snug text-[#526d82]" : "mt-1 text-[0.73rem] font-extrabold leading-4 text-[#526d82] sm:text-[0.76rem]"}>{markTaxpayer(feature.copy)}</p>
-                  {"showSocialIcons" in feature && feature.showSocialIcons ? (
-                    <div className="mt-1.5 flex flex-wrap gap-1" aria-label="FRTV social app emblems">
-                      {socialApps.map((app) => (
-                        <span key={app.label} className={`social-icon social-icon-${app.key}`} title={app.label} aria-label={app.label}>
-                          <app.Icon />
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                  <span className="feature-cta-action mt-auto pt-1">
-                    {feature.action}
-                    {feature.href ? <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /> : null}
-                  </span>
-                </div>
-              );
-
-              const pillClass = `feature-pill group${"neonTitle" in feature && feature.neonTitle ? " feature-pill--daily" : ""}`;
-
-              return feature.href ? (
-                <a key={feature.title} href={feature.href} className={pillClass} aria-label={`${feature.title}: ${feature.copy}`}>
-                  {content}
-                </a>
-              ) : (
-                <div key={feature.title} className={pillClass}>
-                  {content}
-                </div>
-              );
-            })}
-            <RagPicsCard />
-          </div>
-        </div>
       </section>
 
       <section id="top" className="hero-scroll-stage relative overflow-hidden bg-white">

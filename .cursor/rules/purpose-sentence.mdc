@@ -1,13 +1,13 @@
 ---
-description: Keep the homepage purpose sentence under the header and above the feature cards
+description: Keep the homepage purpose sentence under the header
 alwaysApply: true
 ---
 
 # Purpose sentence
 
-The homepage purpose sentence is the first thing under the site header, on phone, tablet, and desktop. It sits above the Daily News card and the rag-pic card so a visitor reads what the site is before those cards.
+The homepage purpose sentence is the first thing under the site header, on phone, tablet, and desktop. It sits above Think Before You Flush so a visitor reads what the site is before the hero.
 
-Keep that sentence in the `site-intro` section in `client/src/pages/Home.tsx`, and keep that section before the quick-access section. It stays full width of the page content (`max-w-7xl`). The cards may stack on a phone. They still come after the sentence.
+Keep that sentence in the `site-intro` section in `client/src/pages/Home.tsx`, and keep that section before the hero. It stays full width of the page content (`max-w-7xl`).
 
 Pass the sentence through `markTaxpayer()` so the word taxpayer keeps its standing treatment. In this sentence only, the opening word `Flush` and the word `flushable` are flush blue (`flush-accent-word`). Leave `bad flush` and every other flush word on the site alone.
 
@@ -22,4 +22,4 @@ Pass the sentence through `markTaxpayer()` so the word taxpayer keeps its standi
 </section>
 ```
 
-Do not move the sentence beside the cards, inside a card, or down under Think Before You Flush.
+Do not move the sentence beside other content, inside a card, or down under Think Before You Flush.
