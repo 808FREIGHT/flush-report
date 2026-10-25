@@ -561,6 +561,12 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     width: max-content;
     transform-origin: left center;
     will-change: transform;
+    /* scaleY doesn't affect layout; reserve vertical room for the 1.25 height scale */
+    margin-block: 0.2em;
+  }
+
+  .retro-news-logo__title {
+    padding-block: 0.15em;
   }
 
   .retro-news-logo__flush-line,
