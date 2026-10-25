@@ -543,11 +543,11 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
 
   .retro-news-logo__title {
     color: #f8fbff;
-    font-family: "Arial Narrow", "Helvetica Neue Condensed", "Oswald", sans-serif;
+    font-family: var(--font-display);
     font-size: clamp(1.35rem, 4.6vw, 2.35rem);
     font-weight: 900;
-    letter-spacing: 0.01em;
-    word-spacing: 0.06em;
+    letter-spacing: -0.04em;
+    word-spacing: 0.04em;
     line-height: 0.86;
     text-transform: uppercase;
     white-space: nowrap;
@@ -572,8 +572,8 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
 
     .retro-news-logo__title {
       font-size: clamp(1.2rem, 4.8vw, 1.55rem);
-      letter-spacing: 0.01em;
-      word-spacing: 0.05em;
+      letter-spacing: -0.04em;
+      word-spacing: 0.03em;
     }
 
     .live-clock {
@@ -603,8 +603,8 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
 
     .retro-news-logo__title {
       font-size: clamp(1.7rem, 3.4vw, 2.15rem);
-      letter-spacing: 0.02em;
-      word-spacing: 0.1em;
+      letter-spacing: -0.045em;
+      word-spacing: 0.04em;
     }
   }
 
@@ -621,8 +621,8 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
 
     .retro-news-logo__title {
       font-size: 2.35rem;
-      letter-spacing: 0.025em;
-      word-spacing: 0.12em;
+      letter-spacing: -0.05em;
+      word-spacing: 0.04em;
     }
   }
 
