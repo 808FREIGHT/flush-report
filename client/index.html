@@ -8,14 +8,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <meta
       name="description"
-      content="The Flush Report is a worker-led wastewater media platform focused on consumer accountability, taxpayer waste, infrastructure stress, and water-quality protection."
+      content="The Flush Report is a public news site about what happens after a bad flush. We cover the clogs, spills, and taxpayer bills that start when flushable wipes, rags, grease, and trash go down the toilet."
     />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://flushreport.live/" />
     <meta property="og:title" content="The Flush Report" />
     <meta
       property="og:description"
       content="You flush it. Operators fight it. Taxpayers fund it. Reporting live from Shitsville, USA."
     />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://flushreport.live/" />
+    <meta property="og:site_name" content="The Flush Report" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="The Flush Report" />
+    <meta
+      name="twitter:description"
+      content="You flush it. Operators fight it. Taxpayers fund it. Reporting live from Shitsville, USA."
+    />
     <meta name="theme-color" content="#003b75" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,10 +34,45 @@
       rel="stylesheet"
     />
     <title>The Flush Report</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "NewsMediaOrganization",
+        "name": "The Flush Report",
+        "url": "https://flushreport.live/",
+        "description": "A public news site about what happens after a bad flush: clogs, spills, and taxpayer bills from flushable wipes, rags, grease, and trash.",
+        "slogan": "You flush it. Operators fight it. Taxpayers fund it."
+      }
+    </script>
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static shell for crawlers and AI fetchers that do not run JavaScript. React replaces this on load. -->
+      <main>
+        <h1>The Flush Report</h1>
+        <p>
+          The Flush Report is a public news site about what happens after a bad flush. We cover the
+          clogs, spills, and taxpayer bills that start when flushable wipes, rags, grease, and trash
+          go down the toilet.
+        </p>
+        <p>You flush it. Operators fight it. Taxpayers fund it. Reporting live from Shitsville, USA.</p>
+        <nav aria-label="Primary">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/news">Daily News</a></li>
+            <li><a href="/featured">Featured</a></li>
+            <li><a href="/contact">Contact</a></li>
+          </ul>
+        </nav>
+      </main>
+    </div>
+    <noscript>
+      <p>
+        The Flush Report needs JavaScript for the full newsroom experience. The summary above still
+        describes the site if scripting is off.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
