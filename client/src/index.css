@@ -559,6 +559,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.18em; /* ~3x the prior tight stack air between FLUSH and REPORT */
     width: max-content;
     transform-origin: left center;
     will-change: transform;
