@@ -611,9 +611,7 @@ function BrandTitle() {
   const scalerRef = useRef<HTMLSpanElement>(null);
   const flushLineRef = useRef<HTMLSpanElement>(null);
   const reportRef = useRef<HTMLSpanElement>(null);
-  // Cumulative glyph scale from natural size: prior widens + another 25% width/height.
-  const BRAND_WIDTH_SCALE = 1.5625 * 1.25;
-  const BRAND_HEIGHT_SCALE = 1.25;
+  const BRAND_WIDTH_SCALE = 1.5625;
 
   useLayoutEffect(() => {
     const scaler = scalerRef.current;
@@ -629,9 +627,9 @@ function BrandTitle() {
       const reportWidth = report.getBoundingClientRect().width;
       if (flushWidth <= 0 || reportWidth <= 0) return;
 
-      // Widen REPORT glyphs to match THE FLUSH, then scale the lockup.
+      // Widen REPORT glyphs to match THE FLUSH, then widen the whole lockup 25%.
       report.style.transform = `scaleX(${flushWidth / reportWidth})`;
-      scaler.style.transform = `scale(${BRAND_WIDTH_SCALE}, ${BRAND_HEIGHT_SCALE})`;
+      scaler.style.transform = `scaleX(${BRAND_WIDTH_SCALE})`;
     };
 
     syncBrandWidth();
@@ -891,7 +889,7 @@ export default function Home() {
   return (
       <main className="min-h-screen overflow-hidden bg-white text-[#102a43] selection:bg-[#0b6fa4] selection:text-white dark:bg-[#111827] dark:text-[#e5edf7]">
       <header ref={headerRef} className="site-header fixed inset-x-0 top-0 z-50 border-b border-[#c7d8eb]/80 bg-white/92 shadow-[0_8px_30px_rgba(12,49,92,0.1)] backdrop-blur-xl dark:border-[#2b3950] dark:bg-[#0f172a]/92">
-          <div className="site-header__bar flex min-h-[6.3rem] items-center px-3 py-4 sm:min-h-[7.2rem] sm:px-6 sm:py-5 lg:px-8">
+          <div className="site-header__bar flex min-h-[5.05rem] items-center px-3 py-3 sm:min-h-[5.75rem] sm:px-6 sm:py-4 lg:px-8">
           <a href="#top" className="site-header__brand group flex min-w-0 items-center" aria-label="The Flush Report home">
             <div className="retro-news-logo">
               <span className="retro-news-logo__channel" aria-label="TFR LIVE channel badge">
