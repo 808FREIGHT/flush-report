@@ -608,51 +608,41 @@ function formatTermEnd(value: string | null): string {
 }
 
 function BrandTitle() {
-  const scalerRef = useRef<HTMLSpanElement>(null);
   const flushLineRef = useRef<HTMLSpanElement>(null);
   const reportRef = useRef<HTMLSpanElement>(null);
-  const BRAND_WIDTH_SCALE = 1.5625;
 
   useLayoutEffect(() => {
-    const scaler = scalerRef.current;
     const flushLine = flushLineRef.current;
     const report = reportRef.current;
-    if (!scaler || !flushLine || !report) return;
+    if (!flushLine || !report) return;
 
-    const syncBrandWidth = () => {
+    const syncReportWidth = () => {
       report.style.transform = "none";
-      scaler.style.transform = "none";
-
       const flushWidth = flushLine.getBoundingClientRect().width;
       const reportWidth = report.getBoundingClientRect().width;
       if (flushWidth <= 0 || reportWidth <= 0) return;
-
-      // Widen REPORT glyphs to match THE FLUSH, then widen the whole lockup 25%.
       report.style.transform = `scaleX(${flushWidth / reportWidth})`;
-      scaler.style.transform = `scaleX(${BRAND_WIDTH_SCALE})`;
     };
 
-    syncBrandWidth();
-    const observer = new ResizeObserver(syncBrandWidth);
+    syncReportWidth();
+    const observer = new ResizeObserver(syncReportWidth);
     observer.observe(flushLine);
-    window.addEventListener("resize", syncBrandWidth);
-    void document.fonts?.ready?.then(syncBrandWidth);
+    window.addEventListener("resize", syncReportWidth);
+    void document.fonts?.ready?.then(syncReportWidth);
 
     return () => {
       observer.disconnect();
-      window.removeEventListener("resize", syncBrandWidth);
+      window.removeEventListener("resize", syncReportWidth);
     };
   }, []);
 
   return (
     <span className="retro-news-logo__title">
-      <span ref={scalerRef} className="retro-news-logo__scaler">
-        <span ref={flushLineRef} className="retro-news-logo__flush-line">
-          THE <span className="flush-accent-word">FLUSH</span>
-        </span>
-        <span ref={reportRef} className="retro-news-logo__report">
-          REPORT
-        </span>
+      <span ref={flushLineRef} className="retro-news-logo__flush-line">
+        THE <span className="flush-accent-word">FLUSH</span>
+      </span>
+      <span ref={reportRef} className="retro-news-logo__report">
+        REPORT
       </span>
     </span>
   );
