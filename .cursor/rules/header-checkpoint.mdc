@@ -1,0 +1,19 @@
+---
+description: Permanent header checkpoint with timezone + live clock
+alwaysApply: false
+---
+
+# Header checkpoint
+
+A permanent restore point exists for the tall header that includes the timezone select and live clock beside the brand:
+
+- Git tag: `checkpoint/header-with-timezone-clock`
+- Commit: `5551a52` (`Grow the site header another 15%.`)
+
+To restore that header state:
+
+```bash
+git checkout checkpoint/header-with-timezone-clock -- client/src/pages/Home.tsx client/src/index.css
+```
+
+Or reset the branch to that tag if a full return is requested.

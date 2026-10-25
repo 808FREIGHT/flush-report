@@ -576,38 +576,6 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
       word-spacing: 0.02em;
     }
 
-    .site-header__clock {
-      max-width: 48%;
-    }
-
-    .live-clock {
-      width: 100%;
-      gap: 0.3rem;
-    }
-
-    .live-clock [data-slot="select-trigger"] {
-      max-width: 8.35rem;
-      justify-content: space-between;
-      padding-left: 0.45rem;
-      padding-right: 0.35rem;
-      font-size: 0.64rem;
-      letter-spacing: 0.03em;
-    }
-
-    .live-clock [data-slot="select-value"] {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .live-clock time {
-      width: 100%;
-      justify-content: flex-end;
-      font-size: 0.58rem;
-      line-height: 1.05;
-      letter-spacing: 0.02em;
-    }
   }
 
   @media (min-width: 640px) {

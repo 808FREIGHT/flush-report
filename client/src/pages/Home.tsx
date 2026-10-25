@@ -18,13 +18,6 @@ import {
 import { FaFacebookF, FaInstagram, FaTiktok, FaXTwitter, FaYoutube } from "react-icons/fa6";
 import { SiThreads } from "react-icons/si";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   DailyNewsStory,
   DailyCostSignal,
   clearScrapeCaches,
@@ -197,15 +190,6 @@ function mixFlaggedWithStanding<T extends { url: string; releasedToday?: boolean
   }
   return mixed;
 }
-
-const timeZoneOptions = [
-  { label: "Hawaii-Aleutian", value: "Pacific/Honolulu" },
-  { label: "Alaska", value: "America/Anchorage" },
-  { label: "Pacific", value: "America/Los_Angeles" },
-  { label: "Mountain", value: "America/Denver" },
-  { label: "Central", value: "America/Chicago" },
-  { label: "Eastern", value: "America/New_York" },
-];
 
 const adPlacements = {
   awareness: {
@@ -616,63 +600,6 @@ const fallbackCostSectionArticles: CostSectionArticle[] = [
   },
 ];
 
-function LiveClock() {
-  const [now, setNow] = useState(() => new Date());
-  const [timeZone, setTimeZone] = useState("Pacific/Honolulu");
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const dateLine = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    weekday: "short",
-    month: "short",
-    day: "2-digit",
-  }).format(now);
-  const timeLine = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    timeZoneName: "short",
-  }).format(now);
-
-  return (
-    <div className="live-clock ml-auto flex max-w-full min-w-0 flex-col items-end justify-center gap-1 sm:flex-row sm:items-center sm:gap-2.5" aria-label="Live local date and time">
-      <div className="flex min-w-0 max-w-full items-center gap-1.5">
-        <span className="shrink-0 font-display text-[0.85rem] font-black uppercase leading-none tracking-[0.03em] text-[#87ceeb] sm:text-lg sm:tracking-[0.05em] xl:text-xl xl:tracking-[0.06em]">
-          Timezone:
-        </span>
-        <Select value={timeZone} onValueChange={setTimeZone}>
-          <SelectTrigger
-            size="sm"
-            className="h-9 w-auto max-w-full min-w-0 shrink border-[#6f95c4] bg-white px-2.5 font-mono text-[11px] font-black uppercase tracking-[0.06em] text-[#87ceeb] shadow-sm hover:border-[#87ceeb] sm:h-10 sm:tracking-[0.1em] xl:h-11 xl:px-3.5"
-            aria-label="Select timezone for live clock"
-          >
-            <SelectValue placeholder="Select" />
-          </SelectTrigger>
-          <SelectContent align="end" className="border-[#c7d8eb] bg-white text-[#102a43]">
-            {timeZoneOptions.map((zone) => (
-              <SelectItem key={zone.value} value={zone.value} className="font-mono text-xs uppercase tracking-[0.08em]">
-                {zone.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <time
-        dateTime={now.toISOString()}
-        className="flex min-w-0 items-baseline gap-1 text-right font-display text-[0.85rem] font-black uppercase leading-none tracking-[0.03em] text-[#87ceeb] sm:text-lg sm:tracking-[0.05em] xl:text-xl xl:tracking-[0.06em]"
-      >
-        <span className="whitespace-nowrap">{dateLine}</span>
-        <span className="whitespace-nowrap">{timeLine}</span>
-      </time>
-    </div>
-  );
-}
-
 function formatTermEnd(value: string | null): string {
   if (!value) return "Current term";
   const parsed = new Date(value);
@@ -911,24 +838,20 @@ export default function Home() {
   return (
       <main className="min-h-screen overflow-hidden bg-white text-[#102a43] selection:bg-[#0b6fa4] selection:text-white dark:bg-[#111827] dark:text-[#e5edf7]">
       <header ref={headerRef} className="site-header fixed inset-x-0 top-0 z-50 border-b border-[#c7d8eb]/80 bg-white/92 shadow-[0_8px_30px_rgba(12,49,92,0.1)] backdrop-blur-xl dark:border-[#2b3950] dark:bg-[#0f172a]/92">
-          <div className="site-header__bar flex min-h-[5.05rem] items-center justify-between gap-2 px-3 py-3 sm:min-h-[5.75rem] sm:gap-4 sm:px-6 sm:py-4 lg:px-8">
-          <a href="#top" className="site-header__brand group flex min-w-0 flex-1 items-center overflow-hidden" aria-label="The Flush Report home">
+          <div className="site-header__bar flex min-h-[5.05rem] items-center px-3 py-3 sm:min-h-[5.75rem] sm:px-6 sm:py-4 lg:px-8">
+          <a href="#top" className="site-header__brand group flex min-w-0 items-center" aria-label="The Flush Report home">
             <div className="retro-news-logo">
               <span className="retro-news-logo__channel" aria-label="TFR LIVE channel badge">
                 <img src="/tfr-logo-transparent-v1.png" alt="" className="retro-news-logo__exact" aria-hidden="true" />
               </span>
               <span className="retro-news-logo__title">
-                <span className="block">
+                <span className="block sm:inline">
                   THE <span className="flush-accent-word">FLUSH</span>
-                </span>
-                <span className="block">REPORT</span>
+                </span>{" "}
+                <span className="block sm:inline">REPORT</span>
               </span>
             </div>
           </a>
-
-          <div className="site-header__clock flex min-w-0 shrink-0 items-center">
-            <LiveClock />
-          </div>
         </div>
       </header>
 
