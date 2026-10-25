@@ -611,7 +611,7 @@ function BrandTitle() {
   const scalerRef = useRef<HTMLSpanElement>(null);
   const flushLineRef = useRef<HTMLSpanElement>(null);
   const reportRef = useRef<HTMLSpanElement>(null);
-  const BRAND_WIDTH_SCALE = 1.25;
+  const BRAND_WIDTH_SCALE = 1.5625;
 
   useLayoutEffect(() => {
     const scaler = scalerRef.current;
