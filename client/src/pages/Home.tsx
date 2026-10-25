@@ -608,57 +608,41 @@ function formatTermEnd(value: string | null): string {
 }
 
 function BrandTitle() {
-  const titleRef = useRef<HTMLSpanElement>(null);
-  const scalerRef = useRef<HTMLSpanElement>(null);
   const flushLineRef = useRef<HTMLSpanElement>(null);
   const reportRef = useRef<HTMLSpanElement>(null);
 
   useLayoutEffect(() => {
-    const title = titleRef.current;
-    const scaler = scalerRef.current;
     const flushLine = flushLineRef.current;
     const report = reportRef.current;
-    if (!title || !scaler || !flushLine || !report) return;
+    if (!flushLine || !report) return;
 
-    const syncBrandWidth = () => {
+    const syncReportWidth = () => {
       report.style.transform = "none";
-      scaler.style.transform = "none";
-
-      const naturalFlushWidth = flushLine.getBoundingClientRect().width;
-      const naturalReportWidth = report.getBoundingClientRect().width;
-      if (naturalFlushWidth <= 0 || naturalReportWidth <= 0) return;
-
-      // Widen REPORT glyphs to match THE FLUSH (no letter-spacing).
-      report.style.transform = `scaleX(${naturalFlushWidth / naturalReportWidth})`;
-
-      const availableWidth = title.clientWidth;
-      if (availableWidth <= 0) return;
-
-      // Widen the whole lockup to fill the remaining header/screen width.
-      scaler.style.transform = `scaleX(${availableWidth / naturalFlushWidth})`;
+      const flushWidth = flushLine.getBoundingClientRect().width;
+      const reportWidth = report.getBoundingClientRect().width;
+      if (flushWidth <= 0 || reportWidth <= 0) return;
+      report.style.transform = `scaleX(${flushWidth / reportWidth})`;
     };
 
-    syncBrandWidth();
-    const observer = new ResizeObserver(syncBrandWidth);
-    observer.observe(title);
-    window.addEventListener("resize", syncBrandWidth);
-    void document.fonts?.ready?.then(syncBrandWidth);
+    syncReportWidth();
+    const observer = new ResizeObserver(syncReportWidth);
+    observer.observe(flushLine);
+    window.addEventListener("resize", syncReportWidth);
+    void document.fonts?.ready?.then(syncReportWidth);
 
     return () => {
       observer.disconnect();
-      window.removeEventListener("resize", syncBrandWidth);
+      window.removeEventListener("resize", syncReportWidth);
     };
   }, []);
 
   return (
-    <span ref={titleRef} className="retro-news-logo__title">
-      <span ref={scalerRef} className="retro-news-logo__scaler">
-        <span ref={flushLineRef} className="retro-news-logo__flush-line">
-          THE <span className="flush-accent-word">FLUSH</span>
-        </span>
-        <span ref={reportRef} className="retro-news-logo__report">
-          REPORT
-        </span>
+    <span className="retro-news-logo__title">
+      <span ref={flushLineRef} className="retro-news-logo__flush-line">
+        THE <span className="flush-accent-word">FLUSH</span>
+      </span>
+      <span ref={reportRef} className="retro-news-logo__report">
+        REPORT
       </span>
     </span>
   );
@@ -895,8 +879,8 @@ export default function Home() {
   return (
       <main className="min-h-screen overflow-hidden bg-white text-[#102a43] selection:bg-[#0b6fa4] selection:text-white dark:bg-[#111827] dark:text-[#e5edf7]">
       <header ref={headerRef} className="site-header fixed inset-x-0 top-0 z-50 border-b border-[#c7d8eb]/80 bg-white/92 shadow-[0_8px_30px_rgba(12,49,92,0.1)] backdrop-blur-xl dark:border-[#2b3950] dark:bg-[#0f172a]/92">
-          <div className="site-header__bar flex min-h-[5.05rem] w-full items-center px-3 py-3 sm:min-h-[5.75rem] sm:px-6 sm:py-4 lg:px-8">
-          <a href="#top" className="site-header__brand group flex w-full min-w-0 items-center" aria-label="The Flush Report home">
+          <div className="site-header__bar flex min-h-[5.05rem] items-center px-3 py-3 sm:min-h-[5.75rem] sm:px-6 sm:py-4 lg:px-8">
+          <a href="#top" className="site-header__brand group flex min-w-0 items-center" aria-label="The Flush Report home">
             <div className="retro-news-logo">
               <span className="retro-news-logo__channel" aria-label="TFR LIVE channel badge">
                 <img src="/tfr-logo-transparent-v1.png" alt="" className="retro-news-logo__exact" aria-hidden="true" />
