@@ -677,7 +677,7 @@ function LiveClock() {
   }).format(now);
 
   return (
-    <div className="live-clock ml-auto flex w-max max-w-full min-w-0 items-center justify-end gap-2 sm:gap-3" aria-label="Live local date and time">
+    <div className="live-clock ml-auto flex w-max max-w-full min-w-0 flex-col items-end gap-1 sm:gap-1.5" aria-label="Live local date and time">
       <Select value={timeZone} onValueChange={setTimeZone}>
         <SelectTrigger
           size="sm"
@@ -1031,7 +1031,7 @@ export default function Home() {
         <div className="relative z-10 px-4 pb-10 pt-2 sm:px-6 lg:px-8">
           <div className="hero-feature mx-auto max-w-7xl">
             <div className="hero-feature__title animate-rise-in">
-              <h1 className="font-display text-[clamp(1.55rem,8.2vw,7.8rem)] font-black uppercase leading-[0.8] tracking-[-0.072em] text-[#102a43]">
+              <h1 className="font-display text-[clamp(2.85rem,8.2vw,7.8rem)] font-black uppercase leading-[0.8] tracking-[-0.072em] text-[#102a43]">
                 <span className="block">Think</span>
                 <span className="mt-[0.05em] block tracking-[-0.05em] text-outline">Before</span>
                 <span className="mt-[0.05em] block">You</span>
