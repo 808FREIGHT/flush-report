@@ -497,19 +497,10 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     box-shadow: 0 8px 20px rgba(16,42,67,0.05);
   }
 
-  .site-header__brand {
-    display: flex;
-    width: 65%;
-    max-width: 65%;
-    min-width: 0;
-  }
-
   .retro-news-logo {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.68rem;
-    width: 100%;
-    min-width: 0;
     padding: 0.15rem 0;
   }
 
@@ -551,33 +542,15 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   }
 
   .retro-news-logo__title {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.06em;
-    min-width: 0;
     color: #f8fbff;
     font-family: var(--font-display);
     font-size: clamp(1.75rem, 6vw, 3.4rem);
     font-weight: 900;
     letter-spacing: -0.052em;
+    word-spacing: 0.02em;
     line-height: 0.86;
     text-transform: uppercase;
     text-shadow: none;
-  }
-
-  .retro-news-logo__line,
-  .retro-news-logo__report {
-    display: flex;
-    width: 100%;
-    justify-content: space-between;
-    align-items: baseline;
-  }
-
-  .retro-news-logo__line > span,
-  .retro-news-logo__report > span {
-    flex: 0 0 auto;
   }
 
   .site-header-spacer {
@@ -587,6 +560,8 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   @media (max-width: 639px) {
     .retro-news-logo {
       gap: 0.55rem;
+      min-width: 0;
+      max-width: 100%;
     }
 
     .retro-news-logo__channel {
@@ -598,7 +573,9 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     .retro-news-logo__title {
       font-size: clamp(1.65rem, 7.5vw, 2.15rem);
       letter-spacing: -0.052em;
+      word-spacing: 0.02em;
     }
+
   }
 
   @media (min-width: 640px) {
@@ -609,8 +586,15 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     }
 
     .retro-news-logo__title {
+      display: block;
       font-size: clamp(2.45rem, 4.8vw, 3.1rem);
       letter-spacing: -0.052em;
+      word-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .retro-news-logo__title > span {
+      display: inline;
     }
   }
 
@@ -628,6 +612,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     .retro-news-logo__title {
       font-size: clamp(3.1rem, 3.4vw, 3.45rem);
       letter-spacing: -0.052em;
+      word-spacing: 0.02em;
     }
   }
 
