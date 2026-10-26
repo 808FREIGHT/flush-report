@@ -954,7 +954,7 @@ export default function Home() {
   return (
       <main className="min-h-screen overflow-hidden bg-white text-[#102a43] selection:bg-[#0b6fa4] selection:text-white dark:bg-[#111827] dark:text-[#e5edf7]">
       <header ref={headerRef} className="site-header fixed inset-x-0 top-0 z-50 border-b border-[#c7d8eb]/80 bg-white/92 shadow-[0_8px_30px_rgba(12,49,92,0.1)] backdrop-blur-xl dark:border-[#2b3950] dark:bg-[#0f172a]/92">
-          <div className="site-header__bar flex w-full min-h-[6.3rem] items-center justify-center px-3 py-4 sm:min-h-[7.2rem] sm:px-6 sm:py-5 lg:px-8">
+          <div className="site-header__bar flex w-full min-h-[4.4rem] items-center justify-center px-3 py-2.5 sm:min-h-[5rem] sm:px-6 sm:py-3.5 lg:px-8">
           <a href="#top" className="site-header__brand group flex min-w-0 items-center justify-center" aria-label="The Flush Report home">
             <BrandLockup />
           </a>
