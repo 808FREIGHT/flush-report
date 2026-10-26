@@ -500,8 +500,8 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   .retro-news-logo {
     display: inline-flex;
     align-items: center;
-    gap: 0.68rem;
-    padding: 0.15rem 0;
+    gap: 0.72rem;
+    padding: 0;
   }
 
   .retro-news-logo__channel {
@@ -513,7 +513,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     position: relative;
     width: 4.1rem;
     min-width: 4.1rem;
-    height: 5.1rem;
+    height: auto;
     border: none;
     border-radius: 0;
     overflow: visible;
@@ -525,7 +525,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   /* Toilet and TFR are separate assets so the right badge can flip only the toilet. */
   .retro-news-logo__toilet-img {
     display: block;
-    width: 78%;
+    width: 100%;
     height: auto;
     flex: 0 0 auto;
     object-fit: contain;
@@ -534,7 +534,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
 
   .retro-news-logo__wordmark-img {
     display: block;
-    width: 72%;
+    width: 92%;
     height: auto;
     flex: 0 0 auto;
     object-fit: contain;
@@ -564,7 +564,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   .retro-news-logo__title {
     display: block;
     position: relative;
-    padding-block: 0.2em;
+    overflow: visible;
     color: #f8fbff;
     font-family: var(--font-display);
     font-size: clamp(1.75rem, 6vw, 3.4rem);
@@ -580,12 +580,8 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.18em; /* ~3x the prior tight stack air between FLUSH and REPORT */
+    gap: 0.12em;
     width: max-content;
-    transform-origin: left center;
-    will-change: transform;
-    /* scaleY doesn't affect layout; title box width/height reserve the scaled room */
-    margin-block: 0.25em;
   }
 
   .retro-news-logo__flush-line,
@@ -614,7 +610,6 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     .retro-news-logo__channel {
       width: 3.85rem;
       min-width: 3.85rem;
-      height: 4.9rem;
     }
 
     .retro-news-logo__title {
@@ -628,7 +623,6 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     .retro-news-logo__channel {
       width: 4.25rem;
       min-width: 4.25rem;
-      height: 5.35rem;
     }
 
     .retro-news-logo__title {
@@ -646,7 +640,6 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     .retro-news-logo__channel {
       width: 4.5rem;
       min-width: 4.5rem;
-      height: 5.6rem;
     }
 
     .retro-news-logo__title {
