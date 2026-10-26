@@ -507,18 +507,58 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   .retro-news-logo__channel {
     display: inline-flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    align-items: stretch;
+    justify-content: flex-start;
     position: relative;
     width: 4.1rem;
     min-width: 4.1rem;
     height: 5.1rem;
     border: none;
     border-radius: 0;
-    overflow: visible;
+    overflow: hidden;
     background: transparent;
     color: #f8fbff;
     box-shadow: none;
+  }
+
+  /* Logo PNG is toilet (top ~67.3%) + gap + TFR wordmark (bottom ~23.5%). */
+  .retro-news-logo__toilet {
+    flex: 0 0 67.3%;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .retro-news-logo__toilet-img {
+    display: block;
+    width: 100%;
+    height: calc(100% * 100 / 67.3);
+    max-width: none;
+    object-fit: cover;
+    object-position: top center;
+    transform-origin: center center;
+  }
+
+  .retro-news-logo__channel--mirror .retro-news-logo__toilet-img {
+    transform: scaleX(-1);
+  }
+
+  .retro-news-logo__channel-gap {
+    flex: 0 0 9.2%;
+  }
+
+  .retro-news-logo__wordmark {
+    flex: 0 0 23.5%;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .retro-news-logo__wordmark-img {
+    display: block;
+    width: 100%;
+    height: calc(100% * 100 / 23.5);
+    max-width: none;
+    object-fit: cover;
+    object-position: bottom center;
   }
 
   .retro-news-logo__exact {
@@ -543,6 +583,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
 
   .retro-news-logo__title {
     display: block;
+    position: relative;
     padding-block: 0.2em;
     color: #f8fbff;
     font-family: var(--font-display);
@@ -563,7 +604,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     width: max-content;
     transform-origin: left center;
     will-change: transform;
-    /* scaleY doesn't affect layout; reserve vertical room for the 1.25 height scale */
+    /* scaleY doesn't affect layout; title box width/height reserve the scaled room */
     margin-block: 0.25em;
   }
 

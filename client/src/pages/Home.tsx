@@ -607,6 +607,34 @@ function formatTermEnd(value: string | null): string {
   return `Term ends ${parsed.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}`;
 }
 
+function ChannelBadge({ mirror = false }: { mirror?: boolean }) {
+  return (
+    <span
+      className={`retro-news-logo__channel${mirror ? " retro-news-logo__channel--mirror" : ""}`}
+      aria-label={mirror ? undefined : "TFR LIVE channel badge"}
+      aria-hidden={mirror ? true : undefined}
+    >
+      <span className="retro-news-logo__toilet">
+        <img
+          src="/tfr-logo-transparent-v1.png"
+          alt=""
+          className="retro-news-logo__toilet-img"
+          aria-hidden="true"
+        />
+      </span>
+      <span className="retro-news-logo__channel-gap" aria-hidden="true" />
+      <span className="retro-news-logo__wordmark">
+        <img
+          src="/tfr-logo-transparent-v1.png"
+          alt=""
+          className="retro-news-logo__wordmark-img"
+          aria-hidden="true"
+        />
+      </span>
+    </span>
+  );
+}
+
 function BrandTitle() {
   const scalerRef = useRef<HTMLSpanElement>(null);
   const flushLineRef = useRef<HTMLSpanElement>(null);
@@ -620,10 +648,15 @@ function BrandTitle() {
     const flushLine = flushLineRef.current;
     const report = reportRef.current;
     if (!scaler || !flushLine || !report) return;
+    const title = scaler.parentElement;
 
     const syncBrandWidth = () => {
       report.style.transform = "none";
       scaler.style.transform = "none";
+      if (title) {
+        title.style.width = "";
+        title.style.height = "";
+      }
 
       const flushWidth = flushLine.getBoundingClientRect().width;
       const reportWidth = report.getBoundingClientRect().width;
@@ -631,7 +664,15 @@ function BrandTitle() {
 
       // Widen REPORT glyphs to match THE FLUSH, then scale the lockup.
       report.style.transform = `scaleX(${flushWidth / reportWidth})`;
+      const naturalWidth = flushLine.getBoundingClientRect().width;
+      const naturalHeight = scaler.getBoundingClientRect().height;
       scaler.style.transform = `scale(${BRAND_WIDTH_SCALE}, ${BRAND_HEIGHT_SCALE})`;
+
+      // Reserve layout room so flanking logos stay clear of the scaled glyphs.
+      if (title && naturalWidth > 0 && naturalHeight > 0) {
+        title.style.width = `${naturalWidth * BRAND_WIDTH_SCALE}px`;
+        title.style.height = `${naturalHeight * BRAND_HEIGHT_SCALE}px`;
+      }
     };
 
     syncBrandWidth();
@@ -894,10 +935,9 @@ export default function Home() {
           <div className="site-header__bar flex w-full min-h-[6.3rem] items-center justify-center px-3 py-4 sm:min-h-[7.2rem] sm:px-6 sm:py-5 lg:px-8">
           <a href="#top" className="site-header__brand group flex min-w-0 items-center justify-center" aria-label="The Flush Report home">
             <div className="retro-news-logo">
-              <span className="retro-news-logo__channel" aria-label="TFR LIVE channel badge">
-                <img src="/tfr-logo-transparent-v1.png" alt="" className="retro-news-logo__exact" aria-hidden="true" />
-              </span>
+              <ChannelBadge />
               <BrandTitle />
+              <ChannelBadge mirror />
             </div>
           </a>
         </div>
