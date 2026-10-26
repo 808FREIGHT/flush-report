@@ -509,10 +509,10 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.18rem;
+    gap: 0.135rem;
     position: relative;
-    width: 4.1rem;
-    min-width: 4.1rem;
+    width: 3.075rem;
+    min-width: 3.075rem;
     height: auto;
     border: none;
     border-radius: 0;
@@ -567,7 +567,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     overflow: visible;
     color: #f8fbff;
     font-family: var(--font-display);
-    font-size: clamp(1.75rem, 6vw, 3.4rem);
+    font-size: clamp(1.3125rem, 4.5vw, 2.55rem);
     font-weight: 900;
     letter-spacing: -0.052em;
     word-spacing: 0.02em;
@@ -597,7 +597,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   }
 
   .site-header-spacer {
-    height: var(--site-header-height, 13.95rem);
+    height: var(--site-header-height, 10.46rem);
   }
 
   @media (max-width: 639px) {
@@ -608,12 +608,12 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     }
 
     .retro-news-logo__channel {
-      width: 3.85rem;
-      min-width: 3.85rem;
+      width: 2.8875rem;
+      min-width: 2.8875rem;
     }
 
     .retro-news-logo__title {
-      font-size: clamp(1.65rem, 7.5vw, 2.15rem);
+      font-size: clamp(1.2375rem, 5.625vw, 1.6125rem);
       letter-spacing: -0.052em;
       word-spacing: 0.02em;
     }
@@ -621,12 +621,12 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
 
   @media (min-width: 640px) {
     .retro-news-logo__channel {
-      width: 4.25rem;
-      min-width: 4.25rem;
+      width: 3.1875rem;
+      min-width: 3.1875rem;
     }
 
     .retro-news-logo__title {
-      font-size: clamp(2.45rem, 4.8vw, 3.1rem);
+      font-size: clamp(1.8375rem, 3.6vw, 2.325rem);
       letter-spacing: -0.052em;
       word-spacing: 0.02em;
     }
@@ -638,12 +638,12 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     }
 
     .retro-news-logo__channel {
-      width: 4.5rem;
-      min-width: 4.5rem;
+      width: 3.375rem;
+      min-width: 3.375rem;
     }
 
     .retro-news-logo__title {
-      font-size: clamp(3.1rem, 3.4vw, 3.45rem);
+      font-size: clamp(2.325rem, 2.55vw, 2.5875rem);
       letter-spacing: -0.052em;
       word-spacing: 0.02em;
     }
