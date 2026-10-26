@@ -3,7 +3,7 @@
 // editorial surfaces, ocean blue backgrounds, sea-glass accents, calm broadcast structure, and a
 // soulful Hawaii-origin mission centered on consumer accountability rather than corporate shaming.
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type Ref } from "react";
 import {
   ArrowRight,
   BadgeDollarSign,
@@ -607,56 +607,119 @@ function formatTermEnd(value: string | null): string {
   return `Term ends ${parsed.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}`;
 }
 
-function BrandTitle() {
-  const scalerRef = useRef<HTMLSpanElement>(null);
+function ChannelBadge({
+  mirror = false,
+  badgeRef,
+}: {
+  mirror?: boolean;
+  badgeRef?: Ref<HTMLSpanElement>;
+}) {
+  return (
+    <span
+      ref={badgeRef}
+      className={`retro-news-logo__channel${mirror ? " retro-news-logo__channel--mirror" : ""}`}
+      aria-label={mirror ? undefined : "TFR LIVE channel badge"}
+      aria-hidden={mirror ? true : undefined}
+    >
+      <img
+        src={mirror ? "/tfr-toilet-only-mirror.png" : "/tfr-toilet-only.png"}
+        alt=""
+        className="retro-news-logo__toilet-img"
+        aria-hidden="true"
+      />
+      <img
+        src="/tfr-wordmark-only.png"
+        alt=""
+        className="retro-news-logo__wordmark-img"
+        aria-hidden="true"
+      />
+    </span>
+  );
+}
+
+function BrandLockup() {
+  const badgeRef = useRef<HTMLSpanElement>(null);
+  const titleRef = useRef<HTMLSpanElement>(null);
+  const stackRef = useRef<HTMLSpanElement>(null);
   const flushLineRef = useRef<HTMLSpanElement>(null);
   const reportRef = useRef<HTMLSpanElement>(null);
-  // Cumulative glyph scale from natural size: prior widens + another 25% width/height.
-  const BRAND_WIDTH_SCALE = 1.5625 * 1.25;
-  const BRAND_HEIGHT_SCALE = 1.25;
 
   useLayoutEffect(() => {
-    const scaler = scalerRef.current;
+    const badge = badgeRef.current;
+    const title = titleRef.current;
+    const stack = stackRef.current;
     const flushLine = flushLineRef.current;
     const report = reportRef.current;
-    if (!scaler || !flushLine || !report) return;
+    if (!badge || !title || !stack || !flushLine || !report) return;
 
-    const syncBrandWidth = () => {
+    const syncBrandLockup = () => {
       report.style.transform = "none";
-      scaler.style.transform = "none";
+      title.style.fontSize = "";
 
+      const toilet = badge.querySelector<HTMLImageElement>(".retro-news-logo__toilet-img");
+      const wordmark = badge.querySelector<HTMLImageElement>(".retro-news-logo__wordmark-img");
+      if (!toilet || !wordmark) return;
+
+      const badgeHeight = wordmark.getBoundingClientRect().bottom - toilet.getBoundingClientRect().top;
+      if (badgeHeight <= 0) return;
+
+      // Grow/shrink type so the word stack matches toilet + TFR height (layout-honest).
+      const basePx = parseFloat(getComputedStyle(title).fontSize) || 16;
+      let low = basePx * 0.5;
+      let high = basePx * 3;
+      for (let i = 0; i < 14; i += 1) {
+        const mid = (low + high) / 2;
+        title.style.fontSize = `${mid}px`;
+        report.style.transform = "none";
+        const stackHeight = stack.getBoundingClientRect().height;
+        if (stackHeight < badgeHeight) low = mid;
+        else high = mid;
+      }
+      title.style.fontSize = `${(low + high) / 2}px`;
+
+      // Widen REPORT glyphs to match THE FLUSH after the final font size lands.
       const flushWidth = flushLine.getBoundingClientRect().width;
       const reportWidth = report.getBoundingClientRect().width;
-      if (flushWidth <= 0 || reportWidth <= 0) return;
-
-      // Widen REPORT glyphs to match THE FLUSH, then scale the lockup.
-      report.style.transform = `scaleX(${flushWidth / reportWidth})`;
-      scaler.style.transform = `scale(${BRAND_WIDTH_SCALE}, ${BRAND_HEIGHT_SCALE})`;
+      if (flushWidth > 0 && reportWidth > 0) {
+        report.style.transform = `scaleX(${flushWidth / reportWidth})`;
+      }
     };
 
-    syncBrandWidth();
-    const observer = new ResizeObserver(syncBrandWidth);
-    observer.observe(flushLine);
-    window.addEventListener("resize", syncBrandWidth);
-    void document.fonts?.ready?.then(syncBrandWidth);
+    const images = Array.from(badge.querySelectorAll("img"));
+    const syncWhenReady = () => {
+      if (images.some((img) => !img.complete)) return;
+      syncBrandLockup();
+    };
+
+    syncWhenReady();
+    const observer = new ResizeObserver(syncBrandLockup);
+    observer.observe(badge);
+    window.addEventListener("resize", syncBrandLockup);
+    images.forEach((img) => img.addEventListener("load", syncBrandLockup));
+    void document.fonts?.ready?.then(syncBrandLockup);
 
     return () => {
       observer.disconnect();
-      window.removeEventListener("resize", syncBrandWidth);
+      window.removeEventListener("resize", syncBrandLockup);
+      images.forEach((img) => img.removeEventListener("load", syncBrandLockup));
     };
   }, []);
 
   return (
-    <span className="retro-news-logo__title">
-      <span ref={scalerRef} className="retro-news-logo__scaler">
-        <span ref={flushLineRef} className="retro-news-logo__flush-line">
-          THE <span className="flush-accent-word">FLUSH</span>
-        </span>
-        <span ref={reportRef} className="retro-news-logo__report">
-          REPORT
+    <div className="retro-news-logo">
+      <ChannelBadge badgeRef={badgeRef} />
+      <span ref={titleRef} className="retro-news-logo__title">
+        <span ref={stackRef} className="retro-news-logo__scaler">
+          <span ref={flushLineRef} className="retro-news-logo__flush-line">
+            THE <span className="flush-accent-word">FLUSH</span>
+          </span>
+          <span ref={reportRef} className="retro-news-logo__report">
+            REPORT
+          </span>
         </span>
       </span>
-    </span>
+      <ChannelBadge mirror />
+    </div>
   );
 }
 
@@ -891,14 +954,9 @@ export default function Home() {
   return (
       <main className="min-h-screen overflow-hidden bg-white text-[#102a43] selection:bg-[#0b6fa4] selection:text-white dark:bg-[#111827] dark:text-[#e5edf7]">
       <header ref={headerRef} className="site-header fixed inset-x-0 top-0 z-50 border-b border-[#c7d8eb]/80 bg-white/92 shadow-[0_8px_30px_rgba(12,49,92,0.1)] backdrop-blur-xl dark:border-[#2b3950] dark:bg-[#0f172a]/92">
-          <div className="site-header__bar flex min-h-[6.3rem] items-center px-3 py-4 sm:min-h-[7.2rem] sm:px-6 sm:py-5 lg:px-8">
-          <a href="#top" className="site-header__brand group flex min-w-0 items-center" aria-label="The Flush Report home">
-            <div className="retro-news-logo">
-              <span className="retro-news-logo__channel" aria-label="TFR LIVE channel badge">
-                <img src="/tfr-logo-transparent-v1.png" alt="" className="retro-news-logo__exact" aria-hidden="true" />
-              </span>
-              <BrandTitle />
-            </div>
+          <div className="site-header__bar flex w-full min-h-[6.3rem] items-center justify-center px-3 py-4 sm:min-h-[7.2rem] sm:px-6 sm:py-5 lg:px-8">
+          <a href="#top" className="site-header__brand group flex min-w-0 items-center justify-center" aria-label="The Flush Report home">
+            <BrandLockup />
           </a>
         </div>
       </header>
