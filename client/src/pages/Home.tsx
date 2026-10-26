@@ -614,23 +614,18 @@ function ChannelBadge({ mirror = false }: { mirror?: boolean }) {
       aria-label={mirror ? undefined : "TFR LIVE channel badge"}
       aria-hidden={mirror ? true : undefined}
     >
-      <span className="retro-news-logo__toilet">
-        <img
-          src="/tfr-logo-transparent-v1.png"
-          alt=""
-          className="retro-news-logo__toilet-img"
-          aria-hidden="true"
-        />
-      </span>
-      <span className="retro-news-logo__channel-gap" aria-hidden="true" />
-      <span className="retro-news-logo__wordmark">
-        <img
-          src="/tfr-logo-transparent-v1.png"
-          alt=""
-          className="retro-news-logo__wordmark-img"
-          aria-hidden="true"
-        />
-      </span>
+      <img
+        src={mirror ? "/tfr-toilet-only-mirror.png" : "/tfr-toilet-only.png"}
+        alt=""
+        className="retro-news-logo__toilet-img"
+        aria-hidden="true"
+      />
+      <img
+        src="/tfr-wordmark-only.png"
+        alt=""
+        className="retro-news-logo__wordmark-img"
+        aria-hidden="true"
+      />
     </span>
   );
 }

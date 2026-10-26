@@ -507,58 +507,38 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   .retro-news-logo__channel {
     display: inline-flex;
     flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
+    align-items: center;
+    justify-content: center;
+    gap: 0.18rem;
     position: relative;
     width: 4.1rem;
     min-width: 4.1rem;
     height: 5.1rem;
     border: none;
     border-radius: 0;
-    overflow: hidden;
+    overflow: visible;
     background: transparent;
     color: #f8fbff;
     box-shadow: none;
   }
 
-  /* Logo PNG is toilet (top ~67.3%) + gap + TFR wordmark (bottom ~23.5%). */
-  .retro-news-logo__toilet {
-    flex: 0 0 67.3%;
-    overflow: hidden;
-    width: 100%;
-  }
-
+  /* Toilet and TFR are separate assets so the right badge can flip only the toilet. */
   .retro-news-logo__toilet-img {
     display: block;
-    width: 100%;
-    height: calc(100% * 100 / 67.3);
-    max-width: none;
-    object-fit: cover;
-    object-position: top center;
-    transform-origin: center center;
-  }
-
-  .retro-news-logo__channel--mirror .retro-news-logo__toilet-img {
-    transform: scaleX(-1);
-  }
-
-  .retro-news-logo__channel-gap {
-    flex: 0 0 9.2%;
-  }
-
-  .retro-news-logo__wordmark {
-    flex: 0 0 23.5%;
-    overflow: hidden;
-    width: 100%;
+    width: 78%;
+    height: auto;
+    flex: 0 0 auto;
+    object-fit: contain;
+    object-position: center;
   }
 
   .retro-news-logo__wordmark-img {
     display: block;
-    width: 100%;
-    height: calc(100% * 100 / 23.5);
-    max-width: none;
-    object-fit: cover;
-    object-position: bottom center;
+    width: 72%;
+    height: auto;
+    flex: 0 0 auto;
+    object-fit: contain;
+    object-position: center;
   }
 
   .retro-news-logo__exact {
