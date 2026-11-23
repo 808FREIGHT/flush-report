@@ -602,7 +602,8 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
 
   @media (max-width: 639px) {
     .retro-news-logo {
-      gap: 0.45rem;
+      /* Give THE FLUSH REPORT room so the toilets don’t crowd the type. */
+      gap: 0.95rem;
       min-width: 0;
       max-width: 100%;
       /* Toilet + TFR sit on the REPORT baseline (JS fine-tunes translateY). */
