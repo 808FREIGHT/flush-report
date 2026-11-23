@@ -638,26 +638,46 @@ function ChannelBadge({
 }
 
 function BrandLockup() {
-  const badgeRef = useRef<HTMLSpanElement>(null);
+  const leftBadgeRef = useRef<HTMLSpanElement>(null);
+  const rightBadgeRef = useRef<HTMLSpanElement>(null);
   const titleRef = useRef<HTMLSpanElement>(null);
   const stackRef = useRef<HTMLSpanElement>(null);
   const flushLineRef = useRef<HTMLSpanElement>(null);
   const reportRef = useRef<HTMLSpanElement>(null);
 
   useLayoutEffect(() => {
-    const badge = badgeRef.current;
+    const leftBadge = leftBadgeRef.current;
+    const rightBadge = rightBadgeRef.current;
     const title = titleRef.current;
     const stack = stackRef.current;
     const flushLine = flushLineRef.current;
     const report = reportRef.current;
-    if (!badge || !title || !stack || !flushLine || !report) return;
+    if (!leftBadge || !rightBadge || !title || !stack || !flushLine || !report) return;
+
+    const badges = [leftBadge, rightBadge];
 
     const syncBrandLockup = () => {
       report.style.transform = "none";
       title.style.fontSize = "";
+      badges.forEach((badge) => {
+        badge.style.transform = "";
+        badge.style.width = "";
+        badge.style.minWidth = "";
+      });
 
-      const toilet = badge.querySelector<HTMLImageElement>(".retro-news-logo__toilet-img");
-      const wordmark = badge.querySelector<HTMLImageElement>(".retro-news-logo__wordmark-img");
+      const isPhone = window.matchMedia("(max-width: 639px)").matches;
+
+      // Phone: measure title against the pre-shrink badge width so title size stays put
+      // while the visible badges remain 25% smaller (CSS 2.8875rem).
+      if (isPhone) {
+        badges.forEach((badge) => {
+          badge.style.width = "3.85rem";
+          badge.style.minWidth = "3.85rem";
+        });
+      }
+
+      const toilet = leftBadge.querySelector<HTMLImageElement>(".retro-news-logo__toilet-img");
+      const wordmark = leftBadge.querySelector<HTMLImageElement>(".retro-news-logo__wordmark-img");
       if (!toilet || !wordmark) return;
 
       const badgeHeight = wordmark.getBoundingClientRect().bottom - toilet.getBoundingClientRect().top;
@@ -677,15 +697,32 @@ function BrandLockup() {
       }
       title.style.fontSize = `${(low + high) / 2}px`;
 
+      // Restore the shrunk phone badge width after title sizing.
+      if (isPhone) {
+        badges.forEach((badge) => {
+          badge.style.width = "";
+          badge.style.minWidth = "";
+        });
+      }
+
       // Widen REPORT glyphs to match THE FLUSH after the final font size lands.
       const flushWidth = flushLine.getBoundingClientRect().width;
       const reportWidth = report.getBoundingClientRect().width;
       if (flushWidth > 0 && reportWidth > 0) {
         report.style.transform = `scaleX(${flushWidth / reportWidth})`;
       }
+
+      // Phone: pin toilet+TFR bottoms exactly to the REPORT baseline.
+      if (isPhone) {
+        const reportBottom = report.getBoundingClientRect().bottom;
+        badges.forEach((badge) => {
+          const delta = reportBottom - badge.getBoundingClientRect().bottom;
+          badge.style.transform = delta === 0 ? "" : `translateY(${delta}px)`;
+        });
+      }
     };
 
-    const images = Array.from(badge.querySelectorAll("img"));
+    const images = badges.flatMap((badge) => Array.from(badge.querySelectorAll("img")));
     const syncWhenReady = () => {
       if (images.some((img) => !img.complete)) return;
       syncBrandLockup();
@@ -693,7 +730,9 @@ function BrandLockup() {
 
     syncWhenReady();
     const observer = new ResizeObserver(syncBrandLockup);
-    observer.observe(badge);
+    observer.observe(leftBadge);
+    observer.observe(rightBadge);
+    observer.observe(title);
     window.addEventListener("resize", syncBrandLockup);
     images.forEach((img) => img.addEventListener("load", syncBrandLockup));
     void document.fonts?.ready?.then(syncBrandLockup);
@@ -707,7 +746,7 @@ function BrandLockup() {
 
   return (
     <div className="retro-news-logo">
-      <ChannelBadge badgeRef={badgeRef} />
+      <ChannelBadge badgeRef={leftBadgeRef} />
       <span ref={titleRef} className="retro-news-logo__title">
         <span ref={stackRef} className="retro-news-logo__scaler">
           <span ref={flushLineRef} className="retro-news-logo__flush-line">
@@ -718,7 +757,7 @@ function BrandLockup() {
           </span>
         </span>
       </span>
-      <ChannelBadge mirror />
+      <ChannelBadge mirror badgeRef={rightBadgeRef} />
     </div>
   );
 }

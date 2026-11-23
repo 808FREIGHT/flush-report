@@ -602,20 +602,29 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
 
   @media (max-width: 639px) {
     .retro-news-logo {
-      gap: 0.55rem;
+      gap: 0.45rem;
       min-width: 0;
       max-width: 100%;
+      /* Toilet + TFR sit on the REPORT baseline (JS fine-tunes translateY). */
+      align-items: flex-end;
     }
 
+    /* Phone only: shrink toilet + TFR badges 25%; title size stays as-is. */
     .retro-news-logo__channel {
-      width: 3.85rem;
-      min-width: 3.85rem;
+      width: 2.8875rem;
+      min-width: 2.8875rem;
+      gap: 0.1rem;
     }
 
     .retro-news-logo__title {
       font-size: clamp(1.65rem, 7.5vw, 2.15rem);
       letter-spacing: -0.052em;
       word-spacing: 0.02em;
+      line-height: 0.86;
+    }
+
+    .retro-news-logo__scaler {
+      gap: 0.1em;
     }
   }
 
