@@ -509,10 +509,11 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.18rem;
+    gap: 0.12rem;
     position: relative;
-    width: 4.1rem;
-    min-width: 4.1rem;
+    /* Shared 25%-shorter header scale across phone / tablet / desktop */
+    width: 2.85rem;
+    min-width: 2.85rem;
     height: auto;
     border: none;
     border-radius: 0;
@@ -525,7 +526,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   /* Toilet and TFR are separate assets so the right badge can flip only the toilet. */
   .retro-news-logo__toilet-img {
     display: block;
-    width: 100%;
+    width: 82%;
     height: auto;
     flex: 0 0 auto;
     object-fit: contain;
@@ -567,7 +568,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     overflow: visible;
     color: #f8fbff;
     font-family: var(--font-display);
-    font-size: clamp(1.75rem, 6vw, 3.4rem);
+    font-size: clamp(1.3125rem, 4.5vw, 2.55rem);
     font-weight: 900;
     letter-spacing: -0.052em;
     word-spacing: 0.02em;
@@ -597,53 +598,56 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   }
 
   .site-header-spacer {
-    height: var(--site-header-height, 13.95rem);
+    height: var(--site-header-height, 9.5rem);
   }
 
+  /* Phone (iPhone): same shorter header proportion as tablet/desktop */
   @media (max-width: 639px) {
     .retro-news-logo {
-      gap: 0.55rem;
+      gap: 0.5rem;
       min-width: 0;
       max-width: 100%;
     }
 
     .retro-news-logo__channel {
-      width: 3.85rem;
-      min-width: 3.85rem;
+      width: 2.65rem;
+      min-width: 2.65rem;
     }
 
     .retro-news-logo__title {
-      font-size: clamp(1.65rem, 7.5vw, 2.15rem);
+      font-size: clamp(1.15rem, 5.2vw, 1.5rem);
       letter-spacing: -0.052em;
       word-spacing: 0.02em;
     }
   }
 
+  /* Tablet (iPad portrait+) */
   @media (min-width: 640px) {
     .retro-news-logo__channel {
-      width: 4.25rem;
-      min-width: 4.25rem;
+      width: 2.95rem;
+      min-width: 2.95rem;
     }
 
     .retro-news-logo__title {
-      font-size: clamp(2.45rem, 4.8vw, 3.1rem);
+      font-size: clamp(1.7rem, 3.4vw, 2.15rem);
       letter-spacing: -0.052em;
       word-spacing: 0.02em;
     }
   }
 
+  /* Desktop */
   @media (min-width: 1280px) {
     .retro-news-logo {
-      gap: 0.85rem;
+      gap: 0.75rem;
     }
 
     .retro-news-logo__channel {
-      width: 4.5rem;
-      min-width: 4.5rem;
+      width: 3.1rem;
+      min-width: 3.1rem;
     }
 
     .retro-news-logo__title {
-      font-size: clamp(3.1rem, 3.4vw, 3.45rem);
+      font-size: clamp(2.15rem, 2.4vw, 2.4rem);
       letter-spacing: -0.052em;
       word-spacing: 0.02em;
     }
