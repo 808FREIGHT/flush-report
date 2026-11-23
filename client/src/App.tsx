@@ -2,6 +2,7 @@
 // The app shell must default to a light coastal-news environment so pages inherit
 // professional white surfaces, ocean-blue accents, and warmer public-service messaging.
 
+import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -41,6 +42,7 @@ function App() {
         <TooltipProvider>
           <Toaster richColors position="top-right" />
           <Router />
+          <Analytics />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
