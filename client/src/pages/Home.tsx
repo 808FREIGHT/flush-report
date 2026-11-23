@@ -656,26 +656,31 @@ function BrandLockup() {
       report.style.transform = "none";
       title.style.fontSize = "";
 
-      const toilet = badge.querySelector<HTMLImageElement>(".retro-news-logo__toilet-img");
-      const wordmark = badge.querySelector<HTMLImageElement>(".retro-news-logo__wordmark-img");
-      if (!toilet || !wordmark) return;
+      const isPhone = window.matchMedia("(max-width: 639px)").matches;
 
-      const badgeHeight = wordmark.getBoundingClientRect().bottom - toilet.getBoundingClientRect().top;
-      if (badgeHeight <= 0) return;
+      // Phone: keep the CSS title size; only tablet/desktop match type to badge height.
+      if (!isPhone) {
+        const toilet = badge.querySelector<HTMLImageElement>(".retro-news-logo__toilet-img");
+        const wordmark = badge.querySelector<HTMLImageElement>(".retro-news-logo__wordmark-img");
+        if (!toilet || !wordmark) return;
 
-      // Grow/shrink type so the word stack matches toilet + TFR height (layout-honest).
-      const basePx = parseFloat(getComputedStyle(title).fontSize) || 16;
-      let low = basePx * 0.5;
-      let high = basePx * 3;
-      for (let i = 0; i < 14; i += 1) {
-        const mid = (low + high) / 2;
-        title.style.fontSize = `${mid}px`;
-        report.style.transform = "none";
-        const stackHeight = stack.getBoundingClientRect().height;
-        if (stackHeight < badgeHeight) low = mid;
-        else high = mid;
+        const badgeHeight = wordmark.getBoundingClientRect().bottom - toilet.getBoundingClientRect().top;
+        if (badgeHeight <= 0) return;
+
+        // Grow/shrink type so the word stack matches toilet + TFR height (layout-honest).
+        const basePx = parseFloat(getComputedStyle(title).fontSize) || 16;
+        let low = basePx * 0.5;
+        let high = basePx * 3;
+        for (let i = 0; i < 14; i += 1) {
+          const mid = (low + high) / 2;
+          title.style.fontSize = `${mid}px`;
+          report.style.transform = "none";
+          const stackHeight = stack.getBoundingClientRect().height;
+          if (stackHeight < badgeHeight) low = mid;
+          else high = mid;
+        }
+        title.style.fontSize = `${(low + high) / 2}px`;
       }
-      title.style.fontSize = `${(low + high) / 2}px`;
 
       // Widen REPORT glyphs to match THE FLUSH after the final font size lands.
       const flushWidth = flushLine.getBoundingClientRect().width;

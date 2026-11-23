@@ -605,11 +605,14 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
       gap: 0.55rem;
       min-width: 0;
       max-width: 100%;
+      /* Keep toilet + TFR badges sitting on the REPORT baseline. */
+      align-items: flex-end;
     }
 
+    /* Phone only: shrink toilet + TFR badges 25%; title size stays as-is. */
     .retro-news-logo__channel {
-      width: 3.85rem;
-      min-width: 3.85rem;
+      width: 2.8875rem;
+      min-width: 2.8875rem;
     }
 
     .retro-news-logo__title {
