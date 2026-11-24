@@ -597,7 +597,7 @@ const fallbackCostSectionArticles: CostSectionArticle[] = [
     date: "Sep. 01, 2020",
   },
   {
-    category: "Legislation",
+    category: "Laws & proposals",
     title: "Senate advances 'Do Not Flush' wipe labeling legislation",
     source: "CASA",
     sourceUrl: "https://casaweb.org",

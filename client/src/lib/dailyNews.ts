@@ -35,12 +35,21 @@ export type WildlifeImpactStory = {
   ogImage?: string;
 };
 
-const CACHE_KEY = "flush-report-daily-news-v8";
+const CACHE_KEY = "flush-report-daily-news-v9";
 const WILDLIFE_CACHE_KEY = "flush-report-weekly-wildlife-archive-v5";
 const OG_IMAGE_CACHE_KEY = "flush-report-og-image-cache-v1";
 const SCRAPE_STATUS_KEY = "flush-report-scrape-status-v1";
 const ACCESS_CHECK_CACHE_KEY = "flush-report-article-access-cache-v2";
 const NEWS_LIMIT = 24;
+
+/** Always hunt recent stories across the whole desk before lane fill / standing archive. */
+const UMBRELLA_FRESH_QUERIES = [
+  '(flushable wipes OR "do not flush" OR nondispersible OR WIPPES) (sewer OR wastewater OR utility OR legislation OR bill OR proposal) when:30d',
+  '(wipe labeling OR flushability OR "do not flush") (law OR bill OR proposal OR ordinance OR regulation) when:90d',
+  '(wastewater OR sewer) (screening OR grinder OR "solids handling" OR pump OR solution OR pilot) (wipes OR ragging OR nonflushable) when:90d',
+  '(Surfrider OR "receiving water" OR estuary OR "sewage spill") (wipes OR flushable OR nondispersible) when:90d',
+  '(IWSFG OR "flushability standard" OR dispersibility OR microplastic) (wipes OR flushable) when:1y',
+];
 export const SITE_REGION_LOCK = "US_ONLY";
 const MIN_WEEKLY_WILDLIFE_STORIES = 3;
 const DAILY_SCRAPE_TIME_ZONE = "America/New_York";
@@ -140,12 +149,23 @@ type NewsLane = {
 
 const newsLanes: NewsLane[] = [
   {
-    category: "Legislation",
+    category: "Laws & proposals",
     queries: [
-      "flushable wipes legislation bill rules policy WIPPES Act do not flush label",
-      "wet wipes law utility regulation do not flush IWSFG labeling",
+      "flushable wipes legislation bill proposal WIPPES Act do not flush label",
+      "wet wipes law ordinance policy proposal regulation do not flush labeling",
+      "flushability standard proposal labeling rulemaking wastewater wipes",
     ],
-    matcher: /(legislation|bill|law|rule|policy|senate|house|act|regulation|labeling)/i,
+    matcher: /(legislation|bill|law|rule|policy|senate|house|act|regulation|labeling|proposal|ordinance|rulemaking)/i,
+    minItems: 2,
+  },
+  {
+    category: "Solutions",
+    queries: [
+      "wastewater solution screening grinder solids handling pump flushable wipes",
+      "pilot project wipe capture non-flushables collection system solution",
+      "Do Not Flush education campaign Bin the Wipe solution utility outreach",
+    ],
+    matcher: /(solution|pilot|innovation|retrofit|upgrade|education campaign|bin the wipe|mitigation|remediation|fix)/i,
     minItems: 2,
   },
   {
@@ -347,7 +367,7 @@ export const fallbackDailyStories: DailyNewsStory[] = [
     location: "Papaikou, Hawaii",
   },
   {
-    category: "Legislation",
+    category: "Laws & proposals",
     title: "CASA reports Senate passage of the federal WIPPES Act",
     summary:
       "The WIPPES Act would create federal 'Do Not Flush' labeling requirements for nonflushable wipes packaging, mirroring California's standard and giving utilities a clearer prevention message.",
@@ -391,7 +411,7 @@ export const fallbackDailyStories: DailyNewsStory[] = [
     location: "Florida, USA",
   },
   {
-    category: "Legislation",
+    category: "Laws & proposals",
     title: "Tennessee passes rules tied to failing systems and wipe-labeling pressure",
     summary:
       "State lawmakers advanced system-protection rules while utilities continue public messaging on non-flushable wipes and recurring sewer damage.",
@@ -402,7 +422,7 @@ export const fallbackDailyStories: DailyNewsStory[] = [
     location: "Tennessee, USA",
   },
   {
-    category: "Legislation",
+    category: "Laws & proposals",
     title: "U.S. House passes the WIPPES Act for Do Not Flush wipe labels",
     summary:
       "The House advanced bipartisan labeling rules so nonflushable wipes carry a clear Do Not Flush notice and symbol, continuing the federal push that started with earlier WIPPES introductions.",
@@ -424,7 +444,7 @@ export const fallbackDailyStories: DailyNewsStory[] = [
     location: "Las Cruces, New Mexico",
   },
   {
-    category: "Legislation",
+    category: "Laws & proposals",
     title: "Michigan bans marketing wipes as flushable and requires Do Not Flush labels",
     summary:
       "State officials said so-called flushable wipes clog pumps and screens, citing years of wipe-related station clogs and ratepayer cleanup costs, and welcomed the new labeling law.",
@@ -446,7 +466,7 @@ export const fallbackDailyStories: DailyNewsStory[] = [
     location: "Rockland County, New York",
   },
   {
-    category: "Legislation",
+    category: "Laws & proposals",
     title: "Bipartisan WIPPES Act introduced to require Do Not Flush wipe labels",
     summary:
       "House and Senate sponsors introduced the Wastewater Infrastructure Pollution Prevention and Environmental Safety Act to require clear non-flushable labeling on disposable wipes.",
@@ -457,7 +477,7 @@ export const fallbackDailyStories: DailyNewsStory[] = [
     location: "United States",
   },
   {
-    category: "Legislation",
+    category: "Laws & proposals",
     title: "California AB 818 Do Not Flush wipe-labeling law takes effect",
     summary:
       "California required covered disposable wipes manufactured on or after July 1, 2022 to carry Do Not Flush wording and the industry no-flush symbol, setting the model later copied in federal WIPPES drafts.",
@@ -501,7 +521,7 @@ export const fallbackDailyStories: DailyNewsStory[] = [
     location: "United States",
   },
   {
-    category: "Legislation",
+    category: "Laws & proposals",
     title: "Macomb County sues wipe makers over flushable labeling after fatberg damage",
     summary:
       "Public Works Commissioner Candice Miller filed suit seeking Do Not Flush labeling after wipe-and-grease masses, including the 19-ton Macomb fatberg, forced costly sewer cleanups.",
@@ -523,7 +543,7 @@ export const fallbackDailyStories: DailyNewsStory[] = [
     location: "Shoreline, Washington",
   },
   {
-    category: "Field & workforce",
+    category: "Solutions",
     title: "Work for Water highlights collections crews inventing tools against non-flushables",
     summary:
       "Work for Water covered operator-built wipe traps and public Bin the Wipe messaging, showing how collections professionals invent field tools when mislabeled flushables keep clogging systems.",
@@ -707,17 +727,32 @@ export function isFlushableWipesStory(title: string, summary: string, category =
 }
 
 /** Broad Flush Report relevance: wipes + solutions, science, receiving waters, orgs, and field tech. */
+function isConsumerProductNoise(title: string, summary: string): boolean {
+  const text = `${title} ${summary}`;
+  return /(best flushable wipes|market to \d{4}|marketing budget|holiday ad|collab|hand butts|fragrance free flushable|sensitive-skin demand|big marketing)/i.test(
+    text,
+  );
+}
+
 export function isFlushReportStory(title: string, summary: string, category = ""): boolean {
+  if (isConsumerProductNoise(title, summary)) return false;
   const text = `${title} ${summary} ${category}`;
-  if (isFlushableWipesStory(title, summary, category)) return true;
   if (isScienceOrStandardsStory(title, summary, category)) return true;
 
-  const hasWastewater = /(wastewater|sewer|sewage|lift station|pump station|collections? system|treatment plant|WRRF)/i.test(text);
+  const hasWastewater = /(wastewater|sewer|sewage|lift station|pump station|collections? system|treatment plant|WRRF|utility|public works)/i.test(
+    text,
+  );
   const hasProblemOrSolution =
-    /(non-?flushable|nondispersible|ragging|deragg|fatberg|screen(?:ing)?|grinder|solids handling|cutter plate|imping|overflow|backup|clog|blockage|receiving water|watershed|surfrider|work for water|\bWEF\b|NACWA|CASA|IWSFG)/i.test(
+    /(non-?flushable|nondispersible|ragging|deragg|fatberg|screen(?:ing)?|grinder|solids handling|cutter plate|overflow|backup|clog|blockage|receiving water|watershed|surfrider|work for water|\bWEF\b|NACWA|CASA|IWSFG|proposal|solution|pilot|labeling|WIPPES|do not flush)/i.test(
       text,
     );
-  return hasWastewater && hasProblemOrSolution;
+
+  if (hasWastewater && hasProblemOrSolution) return true;
+  if (isFlushableWipesStory(title, summary, category) && hasWastewater) return true;
+  if (isFlushableWipesStory(title, summary, category) && /(law|bill|proposal|legislation|ordinance|standard|study)/i.test(text)) {
+    return true;
+  }
+  return false;
 }
 
 function passesGeographyGate(title: string, summary: string, location: string, category = ""): boolean {
@@ -1185,17 +1220,9 @@ function withStandingLibrary(released: DailyNewsStory[]): DailyNewsStory[] {
     mixed.push(story);
   };
 
-  for (const lane of newsLanes) {
-    const laneFresh = fresh.filter((story) => story.category === lane.category);
-    const laneStanding = standing.filter((story) => story.category === lane.category);
-    const length = Math.max(laneFresh.length, laneStanding.length);
-    for (let index = 0; index < length; index += 1) {
-      push(laneFresh[index]);
-      push(laneStanding[index]);
-    }
-  }
-
-  for (const story of [...fresh, ...standing]) push(story);
+  // Always lead with newest umbrella finds, then fill gaps from the standing archive.
+  for (const story of fresh) push(story);
+  for (const story of standing) push(story);
   return mixed;
 }
 
@@ -1252,28 +1279,32 @@ export async function loadDailyWastewaterStories(options: { forceLive?: boolean 
   }
 
   try {
+    // 1) Fresh umbrella hunt first (laws, proposals, solutions, spills, science, waters).
+    // 2) Lane queries fill topic gaps after that.
     const laneQueries = newsLanes.flatMap((lane) => lane.queries);
-    const feedResults = await Promise.all(laneQueries.map((query) => fetchFeed(query)));
+    const orderedQueries = [...UMBRELLA_FRESH_QUERIES, ...laneQueries];
+    const feedResults = await Promise.all(orderedQueries.map((query) => fetchFeed(query)));
     const combined = feedResults.flat();
     const deduped = Array.from(new Map(combined.map((item) => [item.url, item])).values());
-    const filtered = deduped.filter((item) =>
-      isFlushReportStory(item.title, item.summary, item.category) ||
-      /(wastewater|sewer|flush|wipes|pump|lift station|overflow|treatment|spill|public works|grant|infrastructure|legislation|bill|cost|screen|surfrider|IWSFG|operator)/i.test(
-        `${item.title} ${item.summary} ${item.category}`,
-      ),
-    );
+    const filtered = deduped.filter((item) => isFlushReportStory(item.title, item.summary, item.category));
 
     const geoStories = filtered.filter((item) =>
       passesGeographyGate(item.title, item.summary, item.location, item.category),
     );
-    const relevantStories = geoStories.filter((item) => isFlushReportStory(item.title, item.summary, item.category));
-    const from2020On = relevantStories.filter((item) => {
+    const from2020On = geoStories.filter((item) => {
       const timestamp = toStoryTimestamp(item.date);
       if (!timestamp) return true;
       return new Date(timestamp).getUTCFullYear() >= 2020;
     });
-    const topStories = curateByLane(from2020On).sort((a, b) => toStoryTimestamp(b.date) - toStoryTimestamp(a.date));
-    const accessibleTopStories = await filterAccessibleByUrl(topStories);
+    // Newest first across the umbrella, then keep a lane minimum so laws/proposals/solutions stay visible.
+    const newestFirst = [...from2020On].sort((a, b) => toStoryTimestamp(b.date) - toStoryTimestamp(a.date));
+    const laneBalanced = curateByLane(from2020On);
+    const merged = Array.from(
+      new Map([...newestFirst, ...laneBalanced].map((item) => [item.url, item])).values(),
+    )
+      .sort((a, b) => toStoryTimestamp(b.date) - toStoryTimestamp(a.date))
+      .slice(0, NEWS_LIMIT);
+    const accessibleTopStories = await filterAccessibleByUrl(merged);
 
     if (accessibleTopStories.length === 0) {
       updateScrapeStatus("dailyStories", {
@@ -1283,7 +1314,7 @@ export async function loadDailyWastewaterStories(options: { forceLive?: boolean 
         intervalKey: dayKey,
         lastAttemptAt: nowIso,
         lastFailureAt: nowIso,
-        note: "10:00am Eastern search found no new national stories. Standing articles stay up.",
+        note: "Fresh umbrella search found no new national stories. Standing articles stay up.",
       });
       return withStandingLibrary([]);
     }
@@ -1296,7 +1327,7 @@ export async function loadDailyWastewaterStories(options: { forceLive?: boolean 
       intervalKey: dayKey,
       lastAttemptAt: nowIso,
       lastSuccessAt: nowIso,
-      note: "10:00am Eastern national drop mixed into the standing articles.",
+      note: "Fresh umbrella drop (laws, proposals, solutions, and related topics) leads the standing archive.",
     });
     return withStandingLibrary(accessibleTopStories);
   } catch {
@@ -1307,7 +1338,7 @@ export async function loadDailyWastewaterStories(options: { forceLive?: boolean 
       intervalKey: dayKey,
       lastAttemptAt: nowIso,
       lastFailureAt: nowIso,
-      note: "10:00am Eastern search failed. Standing articles stay up.",
+      note: "Fresh umbrella search failed. Standing articles stay up.",
     });
     return withStandingLibrary([]);
   }
