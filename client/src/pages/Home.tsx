@@ -623,6 +623,23 @@ function formatTermEnd(value: string | null): string {
   return `Term ends ${parsed.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}`;
 }
 
+/** Abbreviated month + year only, e.g. "SEP. 2020". */
+function formatMonthYear(raw?: string): string {
+  if (!raw) return "";
+  const monthYearOnly = raw.trim().match(/^([A-Za-z]{3})\.?\s+(\d{4})$/);
+  if (monthYearOnly) return `${monthYearOnly[1].toUpperCase()}. ${monthYearOnly[2]}`;
+
+  const withDay = raw.trim().match(/^([A-Za-z]{3})\.?\s+\d{1,2},?\s+(\d{4})$/);
+  if (withDay) return `${withDay[1].toUpperCase()}. ${withDay[2]}`;
+
+  const parsed = new Date(raw.replace(/\./g, ""));
+  if (!Number.isNaN(parsed.getTime())) {
+    const month = parsed.toLocaleDateString("en-US", { month: "short" }).toUpperCase().replace(/\.$/, "");
+    return `${month}. ${parsed.getFullYear()}`;
+  }
+  return raw;
+}
+
 function ChannelBadge({
   mirror = false,
   badgeRef,
@@ -1165,13 +1182,12 @@ export default function Home() {
                 <div className="money-card-foot border-t border-[#d6eaf2]">
                   <p className="font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#64748b]">
                     {signal.source}
-                    {signal.date ? (
-                      <>
-                        {" · "}
-                        <span className="story-date">{signal.date}</span>
-                      </>
-                    ) : null}
                   </p>
+                  {signal.date ? (
+                    <p className="mt-1 font-mono text-[10px] font-black uppercase tracking-[0.14em]">
+                      <span className="story-date">{formatMonthYear(signal.date)}</span>
+                    </p>
+                  ) : null}
                   {signal.location && !signal.title.toLowerCase().includes(signal.location.toLowerCase()) ? (
                     <p className="mt-1 font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#64748b]">{signal.location}</p>
                   ) : null}
@@ -1254,14 +1270,11 @@ export default function Home() {
                       </div>
                       <p className="mt-3 max-w-xl text-sm leading-6 text-white/90">{markTaxpayer(article.blurb)}</p>
                     </div>
-                    <div className="inline-flex items-center justify-between border-t border-white/30 pt-3 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#dbeef7]">
-                      <span>
-                        Source: {article.source}
+                    <div className="inline-flex items-center justify-between gap-3 border-t border-white/30 pt-3 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#dbeef7]">
+                      <span className="min-w-0">
+                        <span className="block">Source: {article.source}</span>
                         {article.date ? (
-                          <>
-                            {" · "}
-                            <span className="story-date">{article.date}</span>
-                          </>
+                          <span className="story-date mt-1 block">{formatMonthYear(article.date)}</span>
                         ) : null}
                       </span>
                       <span className="inline-flex items-center gap-1 rounded-md border border-white/40 bg-[#0f2a46] px-2 py-1 text-white">

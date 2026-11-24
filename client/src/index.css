@@ -411,7 +411,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     max-width: 100%;
     overflow: hidden;
     color: var(--live-green) !important;
-    font-size: clamp(1.35rem, 32cqi, 4.1rem);
+    font-size: clamp(0.95rem, 24cqi, 4.1rem);
     line-height: 0.9;
     letter-spacing: -0.05em;
     white-space: nowrap;
