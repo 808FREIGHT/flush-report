@@ -1226,11 +1226,8 @@ export default function Home() {
                     aria-label={`${article.title}. Opens source from ${article.source} in a new tab.`}
                   >
                     <div>
-                      <div className="relative">
-                        <span className="money-cost-amount absolute right-0 top-0 font-display font-black uppercase leading-none tracking-[-0.02em]">
-                          {article.costAmount}
-                        </span>
-                        <div className="flex items-start gap-2 pr-28">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 flex-1 items-start gap-2">
                           {sourceLogoUrl(article.sourceUrl) ? (
                             <img
                               src={sourceLogoUrl(article.sourceUrl) || ""}
@@ -1242,15 +1239,18 @@ export default function Home() {
                               }}
                             />
                           ) : null}
-                          <div>
+                          <div className="min-w-0">
                             <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#bfe4f5]">
                               {article.category}
                             </p>
-                            <h3 className="mt-2 max-w-xl font-display text-2xl font-black uppercase leading-[0.92] tracking-[-0.02em] text-white">
+                            <h3 className="mt-2 font-display text-xl font-black uppercase leading-[0.92] tracking-[-0.02em] text-white sm:text-2xl">
                               {markTaxpayer(article.title)}
                             </h3>
                           </div>
                         </div>
+                        <span className="money-cost-amount shrink-0 font-display font-black uppercase tracking-[-0.02em]">
+                          {article.costAmount}
+                        </span>
                       </div>
                       <p className="mt-3 max-w-xl text-sm leading-6 text-white/90">{markTaxpayer(article.blurb)}</p>
                     </div>

@@ -410,7 +410,7 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   .money-figure {
     max-width: 100%;
     overflow: hidden;
-    color: var(--live-green);
+    color: var(--live-green) !important;
     font-size: clamp(1.35rem, 32cqi, 4.1rem);
     line-height: 0.9;
     letter-spacing: -0.05em;
@@ -419,13 +419,18 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   }
 
   .money-figure .money-amount-digit,
-  .money-figure .money-amount-suffix {
-    color: var(--live-green);
+  .money-figure .money-amount-suffix,
+  .dark .money-figure,
+  .dark .money-figure .money-amount-digit,
+  .dark .money-figure .money-amount-suffix {
+    color: var(--live-green) !important;
   }
 
-  .money-cost-amount {
+  .money-cost-amount,
+  .dark .money-cost-amount {
     color: var(--live-green) !important;
-    font-size: clamp(2.4rem, 8vw, 3.6rem);
+    font-size: clamp(2.1rem, 6.5vw, 3.2rem);
+    line-height: 0.9;
     text-shadow: 1px 2px 0 #1f7a12;
   }
 
@@ -1440,6 +1445,15 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   .dark h2,
   .dark h3 {
     color: #ffffff !important;
+  }
+
+  /* Cost dollar figures stay neon green even under dark h3 overrides. */
+  .dark h3.money-figure,
+  .dark .money-figure,
+  .dark .money-figure .money-amount-digit,
+  .dark .money-figure .money-amount-suffix,
+  .dark .money-cost-amount {
+    color: var(--live-green) !important;
   }
 
   .rag-pics-card .rag-pics-title,
