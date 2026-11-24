@@ -219,9 +219,9 @@ const adPlacements = {
 };
 
 const socialApps = [
-  { label: "Instagram", key: "instagram", Icon: FaInstagram },
-  { label: "TikTok", key: "tiktok", Icon: FaTiktok },
-  { label: "Facebook", key: "facebook", Icon: FaFacebookF },
+  { label: "Instagram", key: "instagram", Icon: FaInstagram, url: "https://www.instagram.com/the.flush.report/" },
+  { label: "TikTok", key: "tiktok", Icon: FaTiktok, url: "https://www.tiktok.com/@the.flush.report" },
+  { label: "Facebook", key: "facebook", Icon: FaFacebookF, url: "https://www.facebook.com/share/1LzKPRs3Qj/" },
   { label: "YouTube", key: "youtube", Icon: FaYoutube },
   { label: "X", key: "x", Icon: FaXTwitter },
   { label: "Threads", key: "threads", Icon: SiThreads },
@@ -1435,11 +1435,24 @@ export default function Home() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3" aria-label="Social profiles open soon">
-            {socialApps.map((app) => (
-              <span key={`footer-${app.label}`} className={`social-icon social-icon-${app.key}`} title={`${app.label} coming soon`} aria-label={`${app.label} coming soon`}>
-                <app.Icon />
-              </span>
-            ))}
+            {socialApps.map((app) =>
+              app.url ? (
+                <a
+                  key={`footer-${app.label}`}
+                  href={app.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`social-icon social-icon-${app.key}`}
+                  aria-label={`The Flush Report on ${app.label}`}
+                >
+                  <app.Icon />
+                </a>
+              ) : (
+                <span key={`footer-${app.label}`} className={`social-icon social-icon-${app.key}`} title={`${app.label} coming soon`} aria-label={`${app.label} coming soon`}>
+                  <app.Icon />
+                </span>
+              ),
+            )}
           </div>
         </div>
       </footer>
