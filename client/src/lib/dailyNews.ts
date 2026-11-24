@@ -35,12 +35,21 @@ export type WildlifeImpactStory = {
   ogImage?: string;
 };
 
-const CACHE_KEY = "flush-report-daily-news-v7";
-const WILDLIFE_CACHE_KEY = "flush-report-weekly-wildlife-archive-v4";
+const CACHE_KEY = "flush-report-daily-news-v9";
+const WILDLIFE_CACHE_KEY = "flush-report-weekly-wildlife-archive-v5";
 const OG_IMAGE_CACHE_KEY = "flush-report-og-image-cache-v1";
 const SCRAPE_STATUS_KEY = "flush-report-scrape-status-v1";
-const ACCESS_CHECK_CACHE_KEY = "flush-report-article-access-cache-v1";
-const NEWS_LIMIT = 18;
+const ACCESS_CHECK_CACHE_KEY = "flush-report-article-access-cache-v2";
+const NEWS_LIMIT = 24;
+
+/** Always hunt recent stories across the whole desk before lane fill / standing archive. */
+const UMBRELLA_FRESH_QUERIES = [
+  '(flushable wipes OR "do not flush" OR nondispersible OR WIPPES) (sewer OR wastewater OR utility OR legislation OR bill OR proposal) when:30d',
+  '(wipe labeling OR flushability OR "do not flush") (law OR bill OR proposal OR ordinance OR regulation) when:90d',
+  '(wastewater OR sewer) (screening OR grinder OR "solids handling" OR pump OR solution OR pilot) (wipes OR ragging OR nonflushable) when:90d',
+  '(Surfrider OR "receiving water" OR estuary OR "sewage spill") (wipes OR flushable OR nondispersible) when:90d',
+  '(IWSFG OR "flushability standard" OR dispersibility OR microplastic) (wipes OR flushable) when:1y',
+];
 export const SITE_REGION_LOCK = "US_ONLY";
 const MIN_WEEKLY_WILDLIFE_STORIES = 3;
 const DAILY_SCRAPE_TIME_ZONE = "America/New_York";
@@ -140,40 +149,91 @@ type NewsLane = {
 
 const newsLanes: NewsLane[] = [
   {
-    category: "Legislation",
+    category: "Laws & proposals",
     queries: [
-      "flushable wipes legislation bill rules policy WIPPES Act do not flush label",
-      "wet wipes law utility regulation do not flush",
+      "flushable wipes legislation bill proposal WIPPES Act do not flush label",
+      "wet wipes law ordinance policy proposal regulation do not flush labeling",
+      "flushability standard proposal labeling rulemaking wastewater wipes",
     ],
-    matcher: /(legislation|bill|law|rule|policy|senate|house|act|regulation)/i,
-    minItems: 3,
+    matcher: /(legislation|bill|law|rule|policy|senate|house|act|regulation|labeling|proposal|ordinance|rulemaking)/i,
+    minItems: 2,
+  },
+  {
+    category: "Solutions",
+    queries: [
+      "wastewater solution screening grinder solids handling pump flushable wipes",
+      "pilot project wipe capture non-flushables collection system solution",
+      "Do Not Flush education campaign Bin the Wipe solution utility outreach",
+    ],
+    matcher: /(solution|pilot|innovation|retrofit|upgrade|education campaign|bin the wipe|mitigation|remediation|fix)/i,
+    minItems: 2,
   },
   {
     category: "Catastrophes",
     queries: [
       "flushable wipes sewer backup spill emergency overflow clog damage",
-      "wet wipes pump failure sewer blockage contamination event",
+      "wet wipes pump failure sewer blockage contamination sewage spill river ocean",
     ],
-    matcher: /(catastrophe|disaster|spill|overflow|failure|collapse|contamination|emergency)/i,
-    minItems: 3,
+    matcher: /(catastrophe|disaster|spill|overflow|failure|collapse|contamination|emergency|backup|fatberg|rag ?ball)/i,
+    minItems: 2,
   },
   {
     category: "Public warnings",
     queries: [
       "utility warning flushable wipes sewer warning public works alert",
-      "do not flush wipes warning wastewater department alert",
+      "do not flush wipes warning wastewater department alert Surfrider",
     ],
-    matcher: /(warning|alert|public works|do not flush|utility department|advisory)/i,
-    minItems: 3,
+    matcher: /(warning|alert|public works|do not flush|utility department|advisory|campaign|outreach)/i,
+    minItems: 2,
   },
   {
     category: "Infrastructure money",
     queries: [
       "flushable wipes pump station repair cost sewer maintenance taxpayer",
-      "wet wipes infrastructure costs utility repair spending",
+      "wet wipes infrastructure costs utility repair spending NACWA",
     ],
-    matcher: /(funding|grant|bond|budget|cost|investment|repair|upgrades|project|money)/i,
-    minItems: 3,
+    matcher: /(funding|grant|bond|budget|cost|investment|repair|upgrades|project|money|ratepayer|taxpayer)/i,
+    minItems: 2,
+  },
+  {
+    category: "Technology",
+    queries: [
+      "wastewater screening system grinder pump ragging flushable wipes technology",
+      "solids handling pump cutter plate flushable wipes lift station deragging",
+      "Work for Water non-flushables collection system tools screens",
+    ],
+    matcher: /(technology|screening|screen|grinder|pump|impeller|cutter|deragg|solids handling|porcupine|equipment|innovation)/i,
+    minItems: 2,
+  },
+  {
+    category: "Science & standards",
+    queries: [
+      "IWSFG flushability standard wet wipes scientific study dispersibility",
+      "flushable wipes peer reviewed study sewer blockage science materials",
+      "INDA EDANA flushability guidelines wastewater microplastics wipes",
+    ],
+    matcher: /(science|study|research|peer.?reviewed|standard|IWSFG|INDA|EDANA|dispersib|flushability|criteria|microplastic|journal)/i,
+    minItems: 2,
+  },
+  {
+    category: "Conservation & waters",
+    queries: [
+      "Surfrider Foundation sewage spill flushable wipes coastal waterways",
+      "flushable wipes river estuary bay ocean receiving water pollution",
+      "conservation group wastewater overflow beach water quality wipes",
+    ],
+    matcher: /(surfrider|conservation|watershed|receiving water|river|estuary|bay|ocean|coast|beach|habitat|fish|marine)/i,
+    minItems: 2,
+  },
+  {
+    category: "Field & workforce",
+    queries: [
+      "Work for Water wastewater operator flushable wipes collections",
+      "wastewater operator ragging pump station wipe clog field crew",
+      "WEF nondispersibles flushables collections systems professionals",
+    ],
+    matcher: /(operator|workforce|work for water|WEF|collections|crew|field|labor|staff|deragg|professional)/i,
+    minItems: 2,
   },
 ];
 
@@ -228,16 +288,6 @@ function writeAccessCheckCache(cache: AccessCheckCache): void {
   }
 }
 
-const accessDeniedPatterns = [
-  /access denied/i,
-  /\b403\b/,
-  /forbidden/i,
-  /request blocked/i,
-  /captcha/i,
-  /permission denied/i,
-  /not authorized/i,
-];
-
 async function checkArticleUrlAccessible(url: string): Promise<{ accessible: boolean; reason?: string }> {
   if (!isHttpUrl(url)) return { accessible: false, reason: "invalid_url" };
 
@@ -251,28 +301,28 @@ async function checkArticleUrlAccessible(url: string): Promise<{ accessible: boo
   try {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 8000);
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-    const response = await fetch(proxyUrl, { signal: controller.signal });
+    const response = await fetch(`/api/article-access?url=${encodeURIComponent(url)}`, {
+      signal: controller.signal,
+    });
     window.clearTimeout(timeout);
 
     if (!response.ok) {
-      const reason = `http_${response.status}`;
-      cache[url] = { day, accessible: false, checkedAt: new Date().toISOString(), reason };
+      // Do not empty the live drop when the access helper is down.
+      cache[url] = { day, accessible: true, checkedAt: new Date().toISOString(), reason: "unverified" };
       writeAccessCheckCache(cache);
-      return { accessible: false, reason };
+      return { accessible: true, reason: "unverified" };
     }
 
-    const text = (await response.text()).slice(0, 2500);
-    const denied = accessDeniedPatterns.some((pattern) => pattern.test(text));
-    const accessible = !denied;
-    const reason = accessible ? "ok" : "access_denied_marker";
+    const payload = (await response.json()) as { accessible?: boolean; reason?: string };
+    const accessible = payload.accessible !== false;
+    const reason = payload.reason || (accessible ? "ok" : "access_denied_marker");
     cache[url] = { day, accessible, checkedAt: new Date().toISOString(), reason };
     writeAccessCheckCache(cache);
     return { accessible, reason };
   } catch {
-    cache[url] = { day, accessible: false, checkedAt: new Date().toISOString(), reason: "fetch_error" };
+    cache[url] = { day, accessible: true, checkedAt: new Date().toISOString(), reason: "unverified" };
     writeAccessCheckCache(cache);
-    return { accessible: false, reason: "fetch_error" };
+    return { accessible: true, reason: "unverified" };
   }
 }
 
@@ -304,7 +354,6 @@ export const fallbackDailyStories: DailyNewsStory[] = [
     date: "Oct. 22, 2026",
     url: "https://www.hawaiinewsnow.com/2026/10/23/wastewater-overflow-closes-portions-kalama-park-impacts-south-maui-areas/",
     location: "Kihei, Maui",
-    releasedToday: true,
   },
   {
     category: "Catastrophes",
@@ -316,43 +365,9 @@ export const fallbackDailyStories: DailyNewsStory[] = [
     date: "Oct. 22, 2026",
     url: "https://www.hawaiitribune-herald.com/2026/10/22/hawaii-news/county-unintentional-wastewater-discharge-in-papaikou/",
     location: "Papaikou, Hawaii",
-    releasedToday: true,
   },
   {
-    category: "Infrastructure money",
-    title: "Federal wipe-labeling push advances as utilities report rising cleanup costs",
-    summary:
-      "Utilities and wastewater groups continue backing stronger \"Do Not Flush\" labeling after citing recurring wipe-related clogs and taxpayer-funded maintenance pressure.",
-    source: "CASA",
-    sourceUrl: "https://casaweb.org",
-    date: "Apr. 29, 2026",
-    url: "https://casaweb.org/federal-legislative-update-4-13-26/",
-    location: "United States",
-  },
-  {
-    category: "Catastrophes",
-    title: "Officials warn wipes and grease are clogging sewer systems during drought",
-    summary:
-      "Local officials warned that wipes continue to create avoidable sewer blockages and emergency response burdens, especially during stressed system conditions.",
-    source: "Tampa Bay 28",
-    sourceUrl: "https://www.tampabay28.com",
-    date: "Apr. 27, 2026",
-    url: "https://www.tampabay28.com/news/local-news/officials-warn-wipes-and-grease-are-clogging-sewer-systems-during-drought",
-    location: "Florida, USA",
-  },
-  {
-    category: "Legislation",
-    title: "Tennessee passes rules tied to failing systems and wipe-labeling pressure",
-    summary:
-      "State lawmakers advanced system-protection rules while utilities continue public messaging on non-flushable wipes and recurring sewer damage.",
-    source: "Tennessee Lookout",
-    sourceUrl: "https://tennesseelookout.com",
-    date: "Apr. 7, 2026",
-    url: "https://tennesseelookout.com/2026/04/07/tennessee-legislature-passes-bill-setting-new-rules-for-failing-wastewater-systems/",
-    location: "Tennessee, USA",
-  },
-  {
-    category: "Legislation",
+    category: "Laws & proposals",
     title: "CASA reports Senate passage of the federal WIPPES Act",
     summary:
       "The WIPPES Act would create federal 'Do Not Flush' labeling requirements for nonflushable wipes packaging, mirroring California's standard and giving utilities a clearer prevention message.",
@@ -361,6 +376,17 @@ export const fallbackDailyStories: DailyNewsStory[] = [
     date: "Apr. 13, 2026",
     url: "https://casaweb.org/federal-legislative-update-4-13-26/",
     location: "United States",
+  },
+  {
+    category: "Public warnings",
+    title: "Great Bend says wipes are clogging mains, lift stations, and pumps",
+    summary:
+      "Great Bend Public Utilities warned that wipes do not break down fast enough, collect throughout the wastewater system, and combine with grease and debris to create blockages and backups.",
+    source: "Great Bend Public Utilities",
+    sourceUrl: "https://www.greatbendks.net",
+    date: "Apr. 21, 2026",
+    url: "https://www.greatbendks.net/CivicAlerts.aspx?AID=377",
+    location: "Great Bend, Kansas",
   },
   {
     category: "Public warnings",
@@ -374,15 +400,235 @@ export const fallbackDailyStories: DailyNewsStory[] = [
     location: "Lennox, South Dakota",
   },
   {
-    category: "Public warnings",
-    title: "Great Bend says wipes are clogging mains, lift stations, and pumps",
+    category: "Catastrophes",
+    title: "Officials warn wipes and grease are clogging sewer systems during drought",
     summary:
-      "Great Bend Public Utilities warned that wipes do not break down fast enough, collect throughout the wastewater system, and combine with grease and debris to create blockages and backups.",
-    source: "Great Bend Public Utilities",
-    sourceUrl: "https://www.greatbendks.net",
-    date: "Apr. 21, 2026",
-    url: "https://www.greatbendks.net/CivicAlerts.aspx?AID=377",
-    location: "Great Bend, Kansas",
+      "Local officials warned that wipes continue to create avoidable sewer blockages and emergency response burdens, especially during stressed system conditions.",
+    source: "Tampa Bay 28",
+    sourceUrl: "https://www.tampabay28.com",
+    date: "Apr. 27, 2026",
+    url: "https://www.tampabay28.com/news/local-news/officials-warn-wipes-and-grease-are-clogging-sewer-systems-during-drought",
+    location: "Florida, USA",
+  },
+  {
+    category: "Laws & proposals",
+    title: "Tennessee passes rules tied to failing systems and wipe-labeling pressure",
+    summary:
+      "State lawmakers advanced system-protection rules while utilities continue public messaging on non-flushable wipes and recurring sewer damage.",
+    source: "Tennessee Lookout",
+    sourceUrl: "https://tennesseelookout.com",
+    date: "Apr. 7, 2026",
+    url: "https://tennesseelookout.com/2026/04/07/tennessee-legislature-passes-bill-setting-new-rules-for-failing-wastewater-systems/",
+    location: "Tennessee, USA",
+  },
+  {
+    category: "Laws & proposals",
+    title: "U.S. House passes the WIPPES Act for Do Not Flush wipe labels",
+    summary:
+      "The House advanced bipartisan labeling rules so nonflushable wipes carry a clear Do Not Flush notice and symbol, continuing the federal push that started with earlier WIPPES introductions.",
+    source: "Congressman Kevin Mullin",
+    sourceUrl: "https://kevinmullin.house.gov",
+    date: "Jun. 23, 2025",
+    url: "https://kevinmullin.house.gov/2025/06/23/wippes-act-passes-through-the-u-s-house/",
+    location: "United States",
+  },
+  {
+    category: "Public warnings",
+    title: "Las Cruces utilities warn residents: do not flush wipes of any kind",
+    summary:
+      "Las Cruces Utilities said wipe buildup at lift stations can trigger backups in homes and clog city wastewater facilities, and began door-hanger warnings near affected stations.",
+    source: "City of Las Cruces",
+    sourceUrl: "https://lascruces.gov",
+    date: "Nov. 13, 2024",
+    url: "https://lascruces.gov/please-do-not-flush-wipes/",
+    location: "Las Cruces, New Mexico",
+  },
+  {
+    category: "Laws & proposals",
+    title: "Michigan bans marketing wipes as flushable and requires Do Not Flush labels",
+    summary:
+      "State officials said so-called flushable wipes clog pumps and screens, citing years of wipe-related station clogs and ratepayer cleanup costs, and welcomed the new labeling law.",
+    source: "Michigan EGLE",
+    sourceUrl: "https://www.michigan.gov/egle",
+    date: "Jul. 10, 2024",
+    url: "https://www.michigan.gov/egle/newsroom/mi-environment/2024/07/10/you-can-no-longer-call-wipes-flushable-in-michigan",
+    location: "Michigan, USA",
+  },
+  {
+    category: "Catastrophes",
+    title: "Rockland County coverage ties fatbergs and sewer clogs to flushed wipes",
+    summary:
+      "Clarkstown officials described recurring fatbergs of grease and so-called flushable wipes in Rockland sewer systems, warning that ratepayers cover the rising maintenance burden.",
+    source: "Town of Clarkstown",
+    sourceUrl: "https://www.clarkstown.gov",
+    date: "Feb. 28, 2024",
+    url: "https://www.clarkstown.gov/weekly-column/not-so-flushable-wipes-wreak-havoc-on-rocklands-sewer-systems/",
+    location: "Rockland County, New York",
+  },
+  {
+    category: "Laws & proposals",
+    title: "Bipartisan WIPPES Act introduced to require Do Not Flush wipe labels",
+    summary:
+      "House and Senate sponsors introduced the Wastewater Infrastructure Pollution Prevention and Environmental Safety Act to require clear non-flushable labeling on disposable wipes.",
+    source: "Congresswoman Lisa McClain",
+    sourceUrl: "https://mcclain.house.gov",
+    date: "Apr. 27, 2023",
+    url: "https://mcclain.house.gov/2023/4/mcclain-peltola-merkley-collins-introduce-bipartisan-bicameral-wippes-act",
+    location: "United States",
+  },
+  {
+    category: "Laws & proposals",
+    title: "California AB 818 Do Not Flush wipe-labeling law takes effect",
+    summary:
+      "California required covered disposable wipes manufactured on or after July 1, 2022 to carry Do Not Flush wording and the industry no-flush symbol, setting the model later copied in federal WIPPES drafts.",
+    source: "California Legislature",
+    sourceUrl: "https://leginfo.legislature.ca.gov",
+    date: "Jul. 01, 2022",
+    url: "https://leginfo.legislature.ca.gov/faces/billTextClient.xhtml?bill_id=202120220AB818",
+    location: "California, USA",
+  },
+  {
+    category: "Catastrophes",
+    title: "Macomb and Oakland counties report pandemic surge in wipe-clogged pumps",
+    summary:
+      "Metro Detroit public-works leaders said weekly wipe loads at one station jumped from about 1,000 pounds to 4,000 pounds during stay-home orders, with a cleanup priced near $450,000.",
+    source: "FOX 2 Detroit",
+    sourceUrl: "https://www.fox2detroit.com",
+    date: "Apr. 01, 2021",
+    url: "https://www.fox2detroit.com/news/macomb-oakland-county-disposable-wipes-fatberg",
+    location: "Macomb County, Michigan",
+  },
+  {
+    category: "Public warnings",
+    title: "Middlesex Borough blames flushable wipes for dual pump-station failure",
+    summary:
+      "After both Green Brook Road pumps failed, crews found wipe-packed impellers and warned residents that pandemic wipe use was clogging the sanitary system and driving needless expense.",
+    source: "Middlesex Borough",
+    sourceUrl: "https://www.middlesexboro-nj.gov",
+    date: "Jan. 30, 2021",
+    url: "https://www.middlesexboro-nj.gov/latest-news/message-from-mayor-madden-discharging-flushable-wipes",
+    location: "Middlesex Borough, New Jersey",
+  },
+  {
+    category: "Infrastructure money",
+    title: "NACWA estimates flushed wipes cost U.S. utilities about $441 million a year",
+    summary:
+      "The National Association of Clean Water Agencies studied documented utility costs and estimated about $441 million in added collection-system operating costs from flushed wipes nationwide.",
+    source: "NACWA",
+    sourceUrl: "https://www.nacwa.org",
+    date: "Sep. 01, 2020",
+    url: "https://www.nacwa.org/docs/default-source/resources---public/executive-summary_cost_of_wipes.pdf",
+    location: "United States",
+  },
+  {
+    category: "Laws & proposals",
+    title: "Macomb County sues wipe makers over flushable labeling after fatberg damage",
+    summary:
+      "Public Works Commissioner Candice Miller filed suit seeking Do Not Flush labeling after wipe-and-grease masses, including the 19-ton Macomb fatberg, forced costly sewer cleanups.",
+    source: "Michigan Public",
+    sourceUrl: "https://www.michiganpublic.org",
+    date: "May. 06, 2020",
+    url: "https://www.michiganpublic.org/environment-science/2020-05-06/macomb-county-brings-suit-against-manufacturers-of-fatberg-causing-flushable-wipes",
+    location: "Macomb County, Michigan",
+  },
+  {
+    category: "Field & workforce",
+    title: "King County operators fight weekly rag-ball clogs at Hidden Lake Pump Station",
+    summary:
+      "\"This pump station is a frequent flyer,\" operator Isaiah White said after wipe-packed pumps forced overnight callouts that can take five to six hours, putting Puget Sound overflow risk on the line.",
+    source: "King County WTD",
+    sourceUrl: "https://kingcountywtd.com",
+    date: "Aug. 18, 2026",
+    url: "https://kingcountywtd.com/2026/08/18/clogged-not-forgotten-the-hidden-reality-when-you-flush-wipes/",
+    location: "Shoreline, Washington",
+  },
+  {
+    category: "Solutions",
+    title: "Work for Water highlights collections crews inventing tools against non-flushables",
+    summary:
+      "Work for Water covered operator-built wipe traps and public Bin the Wipe messaging, showing how collections professionals invent field tools when mislabeled flushables keep clogging systems.",
+    source: "Work for Water",
+    sourceUrl: "https://www.workforwater.org",
+    date: "Dec. 01, 2021",
+    url: "https://www.workforwater.org/collections-systems-professionals-invent-new-tools-for-battle-against-non-flushables/",
+    location: "United States",
+  },
+  {
+    category: "Conservation & waters",
+    title: "Surfrider warns wipe clogs drive sewage spills into coastal watersheds",
+    summary:
+      "Surfrider said flushing wipes and other nondispersibles can fail sewers and septic systems, sending raw or partially treated sewage into coastal waterways and beaches while plastic fibers become microplastics.",
+    source: "Surfrider Foundation",
+    sourceUrl: "https://www.surfrider.org",
+    date: "May. 12, 2020",
+    url: "https://www.surfrider.org/news/dont-flush-wipes-down-the-toilet-sewage-spills-on-the-rise",
+    location: "United States",
+  },
+  {
+    category: "Conservation & waters",
+    title: "Surfrider ties sewage spills and wipe clogs to coastal watershed pollution",
+    summary:
+      "Surfrider explained how grease, wipes, and failing infrastructure release under-treated sewage into rivers, bays, and surf zones, and urged trash-not-flush disposal even for products labeled flushable.",
+    source: "Surfrider Foundation",
+    sourceUrl: "https://www.surfrider.org",
+    date: "Apr. 22, 2021",
+    url: "https://www.surfrider.org/news/how-do-sewage-spills-and-failures-pollute-coastal-watersheds",
+    location: "United States",
+  },
+  {
+    category: "Science & standards",
+    title: "IWSFG publishes flushability criteria to protect sewers, pumps, and screens",
+    summary:
+      "The International Water Services Flushability Group set PAS criteria so a product labeled flushable must clear toilets, disintegrate in the slosh-box test, settle, biodisintegrate, and avoid plastics that harm treatment and receiving waters.",
+    source: "IWSFG",
+    sourceUrl: "https://www.iwsfg.org",
+    date: "Jun. 05, 2020",
+    url: "https://www.iwsfg.org/wp-content/uploads/2021/06/IWSFG-PAS-1-Criteria-for-Recognition-as-a-Flushable-Product-2.pdf",
+    location: "United States",
+  },
+  {
+    category: "Science & standards",
+    title: "Scientific Reports: flushable wet wipes lose dispersibility after wet storage",
+    summary:
+      "Peer-reviewed testing found wetlaid hydroentangled wipes that start dispersible can lose that performance during wet storage, undermining flushable marketing claims once products sit on shelves or in packs.",
+    source: "Scientific Reports",
+    sourceUrl: "https://www.nature.com",
+    date: "Apr. 12, 2021",
+    url: "https://www.nature.com/articles/s41598-021-86971-z",
+    location: "United States",
+  },
+  {
+    category: "Science & standards",
+    title: "IWA study maps how wet wipes snag, accumulate, and persist in sewer pipes",
+    summary:
+      "Water Science & Technology experiments showed wipe snagging and accumulation vary with defect location and flow, while larger blockages dissipate slowly—evidence that nondispersibles linger in small-diameter sewers.",
+    source: "IWA Publishing",
+    sourceUrl: "https://iwaponline.com",
+    date: "Sep. 01, 2024",
+    url: "https://iwaponline.com/wst/article/90/5/1668/104262/Blockage-dynamics-in-sewer-pipes-investigating",
+    location: "United States",
+  },
+  {
+    category: "Technology",
+    title: "WEF: pandemic flushables surge renews fight over pumps, screens, and labels",
+    summary:
+      "WEF cited up to $1 billion a year in U.S. nondispersible damage. Executive Director Walt Marlowe warned: \"Do not flush things that should not be flushed,\" as wipes clog pumps, overwhelm screens, and back up sewers.",
+    source: "WEF",
+    sourceUrl: "https://news.wef.org",
+    date: "May. 15, 2020",
+    url: "https://news.wef.org/coronavirus-pandemic-renews-interest-in-flushables-issue/",
+    location: "United States",
+  },
+  {
+    category: "Field & workforce",
+    title: "Work for Water revisits utilities battling the wrath of the unflushables",
+    summary:
+      "Work for Water profiled humorous public outreach paired with real collections pain, noting flushed wipes and other so-called flushables keep driving costly blockages at water resource recovery facilities.",
+    source: "Work for Water",
+    sourceUrl: "https://www.workforwater.org",
+    date: "May. 15, 2025",
+    url: "https://www.workforwater.org/wrath-of-the-unflushables-an-intrepid-utility-battled-a-long-term-foe-and-influenced-flushing-behavior-with-humorous-toilet-talk/",
+    location: "United States",
   },
 ];
 
@@ -468,9 +714,51 @@ export function isUsOnlyStory(title: string, summary: string, location: string):
   return US_STATE_NAMES.some((state) => new RegExp(`\\b${state.replace(/\s+/g, "\\s+")}\\b`, "i").test(text));
 }
 
+export function isScienceOrStandardsStory(title: string, summary: string, category = ""): boolean {
+  const text = `${title} ${summary} ${category}`;
+  return /(IWSFG|INDA|EDANA|scientific reports|peer.?reviewed|flushability (standard|criteria|test|guidelines)|dispersibility|water science|slosh box|microplastic)/i.test(
+    text,
+  );
+}
+
 export function isFlushableWipesStory(title: string, summary: string, category = ""): boolean {
   const text = `${title} ${summary} ${category}`.toLowerCase();
   return /(flushable wipe|flushable wipes|wet wipe|wet wipes|do not flush|wipes clog|wipe labeling|wippes act|\bwipe\b)/i.test(text);
+}
+
+/** Broad Flush Report relevance: wipes + solutions, science, receiving waters, orgs, and field tech. */
+function isConsumerProductNoise(title: string, summary: string): boolean {
+  const text = `${title} ${summary}`;
+  return /(best flushable wipes|market to \d{4}|marketing budget|holiday ad|collab|hand butts|fragrance free flushable|sensitive-skin demand|big marketing)/i.test(
+    text,
+  );
+}
+
+export function isFlushReportStory(title: string, summary: string, category = ""): boolean {
+  if (isConsumerProductNoise(title, summary)) return false;
+  const text = `${title} ${summary} ${category}`;
+  if (isScienceOrStandardsStory(title, summary, category)) return true;
+
+  const hasWastewater = /(wastewater|sewer|sewage|lift station|pump station|collections? system|treatment plant|WRRF|utility|public works)/i.test(
+    text,
+  );
+  const hasProblemOrSolution =
+    /(non-?flushable|nondispersible|ragging|deragg|fatberg|screen(?:ing)?|grinder|solids handling|cutter plate|overflow|backup|clog|blockage|receiving water|watershed|surfrider|work for water|\bWEF\b|NACWA|CASA|IWSFG|proposal|solution|pilot|labeling|WIPPES|do not flush)/i.test(
+      text,
+    );
+
+  if (hasWastewater && hasProblemOrSolution) return true;
+  if (isFlushableWipesStory(title, summary, category) && hasWastewater) return true;
+  if (isFlushableWipesStory(title, summary, category) && /(law|bill|proposal|legislation|ordinance|standard|study)/i.test(text)) {
+    return true;
+  }
+  return false;
+}
+
+function passesGeographyGate(title: string, summary: string, location: string, category = ""): boolean {
+  if (isScienceOrStandardsStory(title, summary, category)) return true;
+  if (/(surfrider|work for water|nacwa|casa|wef news|iwsfg)/i.test(`${title} ${summary} ${category}`)) return true;
+  return isUsOnlyStory(title, summary, location);
 }
 
 function storyCategoryFromLane(title: string, summary: string): string {
@@ -636,12 +924,14 @@ function parseRss(xmlText: string): DailyNewsStory[] {
 }
 
 async function fetchFeed(query: string): Promise<DailyNewsStory[]> {
-  const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rssUrl)}`;
-  const response = await fetch(proxyUrl);
+  const response = await fetch(`/api/news-rss?q=${encodeURIComponent(query)}`);
   if (!response.ok) throw new Error(`Failed to fetch RSS for ${query}`);
-  const xml = await response.text();
-  return parseRss(xml);
+  const contentType = response.headers.get("content-type") || "";
+  const body = await response.text();
+  if (contentType.includes("application/json") || body.trimStart().startsWith("{")) {
+    throw new Error(`News proxy rejected query: ${query}`);
+  }
+  return parseRss(body);
 }
 
 function laneRank(category: string): number {
@@ -653,6 +943,36 @@ function toStoryTimestamp(dateValue: string): number {
   const normalized = dateValue.replace(/\./g, "");
   const timestamp = Date.parse(normalized);
   return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+/** TODAY marks only recent publications in the live drop — not old archive hits Google resurfaces. */
+function isRecentPublication(dateValue: string, maxAgeDays = 21): boolean {
+  const timestamp = toStoryTimestamp(dateValue);
+  if (!timestamp) return false;
+  const ageMs = Date.now() - timestamp;
+  return ageMs >= -86_400_000 && ageMs <= maxAgeDays * 86_400_000;
+}
+
+/** Card badge text: "NOV 2026" from a story date string. */
+export function formatStoryMonthYear(dateValue: string): string {
+  const timestamp = toStoryTimestamp(dateValue);
+  if (!timestamp) {
+    const match = dateValue.match(/([A-Za-z]+).*?(\d{4})/);
+    if (match) return `${match[1].slice(0, 3).toUpperCase()} ${match[2]}`;
+    return dateValue.toUpperCase();
+  }
+  return new Date(timestamp)
+    .toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })
+    .replace(",", "")
+    .toUpperCase();
+}
+
+/** Desk badge for the newsroom header (national drop timezone). */
+export function deskMonthYearLabel(timeZone = DAILY_SCRAPE_TIME_ZONE): string {
+  return new Date()
+    .toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone })
+    .replace(",", "")
+    .toUpperCase();
 }
 
 function curateByLane(stories: DailyNewsStory[]): DailyNewsStory[] {
@@ -889,25 +1209,20 @@ export function rememberMoneyCards(incoming: DailyCostSignal[]): DailyCostSignal
 function withStandingLibrary(released: DailyNewsStory[]): DailyNewsStory[] {
   const fresh = released
     .filter((story) => story.url && !fallbackDailyStories.some((standing) => sameArticle(standing, story)))
-    .map((story) => ({ ...story, releasedToday: true }));
-  const standing = fallbackDailyStories.map((story) => ({ ...story, releasedToday: false }));
+    .map((story) => ({ ...story, releasedToday: isRecentPublication(story.date) }))
+    .sort((a, b) => toStoryTimestamp(b.date) - toStoryTimestamp(a.date));
+  const standing = fallbackDailyStories
+    .map((story) => ({ ...story, releasedToday: false }))
+    .sort((a, b) => toStoryTimestamp(b.date) - toStoryTimestamp(a.date));
   const mixed: DailyNewsStory[] = [];
   const push = (story?: DailyNewsStory) => {
     if (!story || mixed.some((item) => sameArticle(item, story))) return;
     mixed.push(story);
   };
 
-  for (const lane of newsLanes) {
-    const laneFresh = fresh.filter((story) => story.category === lane.category);
-    const laneStanding = standing.filter((story) => story.category === lane.category);
-    const length = Math.max(laneFresh.length, laneStanding.length);
-    for (let index = 0; index < length; index += 1) {
-      push(laneFresh[index]);
-      push(laneStanding[index]);
-    }
-  }
-
-  for (const story of [...fresh, ...standing]) push(story);
+  // Always lead with newest umbrella finds, then fill gaps from the standing archive.
+  for (const story of fresh) push(story);
+  for (const story of standing) push(story);
   return mixed;
 }
 
@@ -964,20 +1279,32 @@ export async function loadDailyWastewaterStories(options: { forceLive?: boolean 
   }
 
   try {
+    // 1) Fresh umbrella hunt first (laws, proposals, solutions, spills, science, waters).
+    // 2) Lane queries fill topic gaps after that.
     const laneQueries = newsLanes.flatMap((lane) => lane.queries);
-    const feedResults = await Promise.all(laneQueries.map((query) => fetchFeed(query)));
+    const orderedQueries = [...UMBRELLA_FRESH_QUERIES, ...laneQueries];
+    const feedResults = await Promise.all(orderedQueries.map((query) => fetchFeed(query)));
     const combined = feedResults.flat();
     const deduped = Array.from(new Map(combined.map((item) => [item.url, item])).values());
-    const filtered = deduped.filter((item) =>
-      /(wastewater|sewer|flush|wipes|pump|lift station|overflow|treatment|spill|public works|grant|infrastructure|legislation|bill|cost)/i.test(
-        `${item.title} ${item.summary} ${item.category}`,
-      ),
-    );
+    const filtered = deduped.filter((item) => isFlushReportStory(item.title, item.summary, item.category));
 
-    const usOnlyStories = filtered.filter((item) => isUsOnlyStory(item.title, item.summary, item.location));
-    const wipesOnlyStories = usOnlyStories.filter((item) => isFlushableWipesStory(item.title, item.summary, item.category));
-    const topStories = curateByLane(wipesOnlyStories).sort((a, b) => toStoryTimestamp(b.date) - toStoryTimestamp(a.date));
-    const accessibleTopStories = await filterAccessibleByUrl(topStories);
+    const geoStories = filtered.filter((item) =>
+      passesGeographyGate(item.title, item.summary, item.location, item.category),
+    );
+    const from2020On = geoStories.filter((item) => {
+      const timestamp = toStoryTimestamp(item.date);
+      if (!timestamp) return true;
+      return new Date(timestamp).getUTCFullYear() >= 2020;
+    });
+    // Newest first across the umbrella, then keep a lane minimum so laws/proposals/solutions stay visible.
+    const newestFirst = [...from2020On].sort((a, b) => toStoryTimestamp(b.date) - toStoryTimestamp(a.date));
+    const laneBalanced = curateByLane(from2020On);
+    const merged = Array.from(
+      new Map([...newestFirst, ...laneBalanced].map((item) => [item.url, item])).values(),
+    )
+      .sort((a, b) => toStoryTimestamp(b.date) - toStoryTimestamp(a.date))
+      .slice(0, NEWS_LIMIT);
+    const accessibleTopStories = await filterAccessibleByUrl(merged);
 
     if (accessibleTopStories.length === 0) {
       updateScrapeStatus("dailyStories", {
@@ -987,7 +1314,7 @@ export async function loadDailyWastewaterStories(options: { forceLive?: boolean 
         intervalKey: dayKey,
         lastAttemptAt: nowIso,
         lastFailureAt: nowIso,
-        note: "10:00am Eastern search found no new national stories. Standing articles stay up.",
+        note: "Fresh umbrella search found no new national stories. Standing articles stay up.",
       });
       return withStandingLibrary([]);
     }
@@ -1000,7 +1327,7 @@ export async function loadDailyWastewaterStories(options: { forceLive?: boolean 
       intervalKey: dayKey,
       lastAttemptAt: nowIso,
       lastSuccessAt: nowIso,
-      note: "10:00am Eastern national drop mixed into the standing articles.",
+      note: "Fresh umbrella drop (laws, proposals, solutions, and related topics) leads the standing archive.",
     });
     return withStandingLibrary(accessibleTopStories);
   } catch {
@@ -1011,7 +1338,7 @@ export async function loadDailyWastewaterStories(options: { forceLive?: boolean 
       intervalKey: dayKey,
       lastAttemptAt: nowIso,
       lastFailureAt: nowIso,
-      note: "10:00am Eastern search failed. Standing articles stay up.",
+      note: "Fresh umbrella search failed. Standing articles stay up.",
     });
     return withStandingLibrary([]);
   }

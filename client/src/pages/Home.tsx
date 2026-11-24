@@ -12,7 +12,6 @@ import {
   Landmark,
   Recycle,
   ShieldAlert,
-  Zap,
   Waves,
 } from "lucide-react";
 import { FaFacebookF, FaInstagram, FaTiktok, FaXTwitter, FaYoutube } from "react-icons/fa6";
@@ -21,8 +20,10 @@ import {
   DailyNewsStory,
   DailyCostSignal,
   clearScrapeCaches,
+  deskMonthYearLabel,
   fallbackCostSignals,
   fallbackDailyStories,
+  formatStoryMonthYear,
   getScrapeStatusSnapshot,
   isUsOnlyStory,
   buildTodayCostSignals,
@@ -427,6 +428,7 @@ type CostSectionArticle = {
   blurb: string;
   url: string;
   costAmount: string;
+  date?: string;
   releasedToday?: boolean;
 };
 
@@ -500,6 +502,7 @@ function toCostSectionArticles(stories: DailyNewsStory[]): CostSectionArticle[] 
       blurb: story.summary || "Source-backed reporting on flushable-wipes system and cost impacts.",
       url: story.url,
       costAmount,
+      date: story.date,
       releasedToday: Boolean(story.releasedToday),
     }));
 }
@@ -561,6 +564,7 @@ const fallbackCostSectionArticles: CostSectionArticle[] = [
     blurb: "A local utility warning that directly ties wipe misuse to repairs and ratepayer burden.",
     url: "https://www.cityoflennoxsd.com/article/2816312",
     costAmount: "$25K-$60K",
+    date: "Apr. 14, 2026",
   },
   {
     category: "Operations alert",
@@ -570,6 +574,7 @@ const fallbackCostSectionArticles: CostSectionArticle[] = [
     blurb: "Explains how crews repeatedly deal with avoidable blockages across core wastewater infrastructure.",
     url: "https://www.greatbendks.net/CivicAlerts.aspx?AID=377",
     costAmount: "$50K+",
+    date: "Apr. 21, 2026",
   },
   {
     category: "Cost signal",
@@ -579,6 +584,7 @@ const fallbackCostSectionArticles: CostSectionArticle[] = [
     blurb: "Documents real budget impacts connected to persistent wipe-related system jams.",
     url: "https://www.yahoo.com/news/articles/flushing-wet-wipes-costs-town-131600152.html",
     costAmount: "$130K+",
+    date: "Aug. 2024",
   },
   {
     category: "Industry research",
@@ -588,15 +594,17 @@ const fallbackCostSectionArticles: CostSectionArticle[] = [
     blurb: "High-impact utility data showing recurring national cost pressure from wipe disposal behavior.",
     url: "https://www.nacwa.org/docs/default-source/resources---public/executive-summary_cost_of_wipes.pdf",
     costAmount: "$441M/yr",
+    date: "Sep. 01, 2020",
   },
   {
-    category: "Legislation",
+    category: "Laws & proposals",
     title: "Senate advances 'Do Not Flush' wipe labeling legislation",
     source: "CASA",
     sourceUrl: "https://casaweb.org",
     blurb: "Tracks policy response to widespread cleanup, maintenance, and education costs.",
     url: "https://casaweb.org/federal-legislative-update-4-13-26/",
     costAmount: "$441M/yr",
+    date: "Apr. 13, 2026",
   },
 ];
 
@@ -1057,7 +1065,7 @@ export default function Home() {
                   Article: {markTaxpayer(activeHeroStory.title)}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  {activeHeroStory.releasedToday ? <span className="today-mark">TODAY</span> : null}
+                  <span className="today-mark">{formatStoryMonthYear(activeHeroStory.date)}</span>
                   <p className="font-mono text-[11px] font-black uppercase tracking-[0.11em] text-[#64748b]">
                     {`By ${activeHeroStory.author || activeHeroStory.source} · ${activeHeroStory.date}`}
                   </p>
@@ -1120,8 +1128,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 border-b border-[#d6eaf2] pb-4">
             <p className="live-flash-badge">
-              <span className="live-flash-text">FLUSH REPORT LIVE</span>
-              <Zap className="live-bolt" aria-hidden="true" />
+              <span className="live-flash-text">{deskMonthYearLabel()}</span>
             </p>
             <h2 className="mt-2 font-mono text-[1.4rem] font-black uppercase tracking-[0.12em] text-[#102a43]">
               Daily Nationwide Coverage Updates
@@ -1131,7 +1138,6 @@ export default function Home() {
             {visibleMoneyCards.map((signal) => (
               <article key={`${signal.lane}-${signal.url}-${signal.title}`} className="stat-card stat-card--money group">
                 <p className="money-lane font-mono font-bold uppercase text-[#64748b]">
-                  {signal.releasedToday ? <span className="today-mark mr-1">TODAY</span> : null}
                   {signal.lane}
                 </p>
                 {signal.amount ? (
@@ -1215,7 +1221,7 @@ export default function Home() {
                           ) : null}
                           <div>
                             <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#bfe4f5]">
-                              {article.releasedToday ? <span className="today-mark mr-2">TODAY</span> : null}
+                              {article.date ? <span className="today-mark mr-2">{formatStoryMonthYear(article.date)}</span> : null}
                               {article.category}
                             </p>
                             <h3 className="mt-2 max-w-xl font-display text-2xl font-black uppercase leading-[0.92] tracking-[-0.02em] text-white">

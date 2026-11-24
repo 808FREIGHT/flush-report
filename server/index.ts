@@ -3,6 +3,7 @@ import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import { ragOfficeMiddleware } from "./ragOffice";
+import { newsProxyMiddleware } from "./newsProxy";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +18,7 @@ async function startServer() {
       ? path.resolve(__dirname, "public")
       : path.resolve(__dirname, "..", "dist", "public");
 
+  app.use(newsProxyMiddleware);
   app.use(ragOfficeMiddleware);
   app.use(express.static(staticPath));
 

@@ -7,25 +7,41 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  Beaker,
   Droplets,
   Factory,
   Landmark,
+  Leaf,
   Radio,
   ShieldAlert,
-  Zap,
+  Wrench,
+  Users,
   Waves,
 } from "lucide-react";
-import { DailyNewsStory, fallbackDailyStories, loadDailyWastewaterStories } from "@/lib/dailyNews";
+import {
+  DailyNewsStory,
+  deskMonthYearLabel,
+  fallbackDailyStories,
+  formatStoryMonthYear,
+  loadDailyWastewaterStories,
+} from "@/lib/dailyNews";
 import { markTaxpayer } from "@/lib/markTaxpayer";
 
 function iconForCategory(category: string) {
   const normalized = category.toLowerCase();
-  if (normalized.includes("funding")) return Droplets;
+  if (normalized.includes("funding") || normalized.includes("money")) return Droplets;
   if (normalized.includes("infrastructure") || normalized.includes("crisis")) return Factory;
-  if (normalized.includes("legislation") || normalized.includes("rule")) return Landmark;
+  if (normalized.includes("legislation") || normalized.includes("law") || normalized.includes("proposal") || normalized.includes("rule")) {
+    return Landmark;
+  }
+  if (normalized.includes("solution")) return Wrench;
   if (normalized.includes("labeling") || normalized.includes("do-not-flush")) return ShieldAlert;
   if (normalized.includes("warning")) return AlertTriangle;
-  if (normalized.includes("overflow") || normalized.includes("clog")) return Waves;
+  if (normalized.includes("technology")) return Wrench;
+  if (normalized.includes("science") || normalized.includes("standard")) return Beaker;
+  if (normalized.includes("conservation") || normalized.includes("waters")) return Leaf;
+  if (normalized.includes("field") || normalized.includes("workforce")) return Users;
+  if (normalized.includes("overflow") || normalized.includes("clog") || normalized.includes("catastrophe")) return Waves;
   return Waves;
 }
 
@@ -63,15 +79,20 @@ export default function News() {
           <div className="mb-8 flex flex-col justify-between gap-5 border-b border-[#cdeaf5] pb-6 md:flex-row md:items-end">
             <div>
               <p className="live-flash-badge">
-                <span className="live-flash-text">FLUSH REPORT LIVE</span>
-                <Zap className="live-bolt" aria-hidden="true" />
+                <span className="live-flash-text">{deskMonthYearLabel()}</span>
               </p>
-              <h2 className="headline-section mt-3">Legislation, catastrophes, public warnings, and infrastructure money.</h2>
+              <h2 className="headline-section mt-3">
+                Laws, proposals, solutions, spills, warnings, money, technology, science, waters, and field crews.
+              </h2>
             </div>
             <p className="max-w-xl text-sm leading-6 text-[#526d82]">
-              National stories drop at 10:00am Eastern. The new ones mix into the standing articles and carry a small TODAY mark.
+              {markTaxpayer(
+                "Every cycle starts by hunting new coverage across the full umbrella—laws, proposals, solutions, spills, science, conservation waters, tech, and taxpayer costs—then fills with the 2020–2026 standing archive. Each card leads with its month and year.",
+              )}
             </p>
-            <p className="max-w-xl font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#64748b]">National drop: 10:00am ET</p>
+            <p className="max-w-xl font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#64748b]">
+              New finds first · Laws · Proposals · Solutions · Archive 2020–2026 · Drop 10:00am ET
+            </p>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
@@ -81,7 +102,7 @@ export default function News() {
                 <article key={`${item.url}-${item.title}`} className="wastewater-news-card group">
                   <div className="flex items-start justify-between gap-5">
                     <div className="flex flex-wrap items-center gap-2">
-                      {item.releasedToday ? <span className="today-mark">TODAY</span> : null}
+                      <span className="today-mark">{formatStoryMonthYear(item.date)}</span>
                       <span className="lower-third">{item.category}</span>
                       {item.location ? <span className="location-chip">{item.location}</span> : null}
                     </div>
