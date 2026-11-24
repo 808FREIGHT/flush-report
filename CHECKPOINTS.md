@@ -20,4 +20,4 @@ git checkout checkpoint/header-with-timezone-clock -- client/src/pages/Home.tsx 
 
 ### Current direction
 
-After this checkpoint, the live header is brand-only: logo + **THE FLUSH REPORT** (no timezone control, no live clock).
+The live header is brand-only again: logo + **THE FLUSH REPORT** (no timezone control, no live clock). The tag above remains the permanent restore point if that older header is needed.

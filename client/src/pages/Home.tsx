@@ -20,10 +20,8 @@ import {
   DailyNewsStory,
   DailyCostSignal,
   clearScrapeCaches,
-  deskMonthYearLabel,
   fallbackCostSignals,
   fallbackDailyStories,
-  formatStoryMonthYear,
   getScrapeStatusSnapshot,
   isUsOnlyStory,
   buildTodayCostSignals,
@@ -1065,9 +1063,9 @@ export default function Home() {
                   Article: {markTaxpayer(activeHeroStory.title)}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className="today-mark">{formatStoryMonthYear(activeHeroStory.date)}</span>
                   <p className="font-mono text-[11px] font-black uppercase tracking-[0.11em] text-[#64748b]">
-                    {`By ${activeHeroStory.author || activeHeroStory.source} · ${activeHeroStory.date}`}
+                    By {activeHeroStory.author || activeHeroStory.source} ·{" "}
+                    <span className="story-date">{activeHeroStory.date}</span>
                   </p>
                   <a href={activeHeroStory.url} target="_blank" rel="noreferrer" className="article-read-button">
                     READ ARTICLE <ArrowRight className="h-3.5 w-3.5" />
@@ -1127,10 +1125,7 @@ export default function Home() {
       <section className="bg-white px-4 pb-16 pt-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 border-b border-[#d6eaf2] pb-4">
-            <p className="live-flash-badge">
-              <span className="live-flash-text">{deskMonthYearLabel()}</span>
-            </p>
-            <h2 className="mt-2 font-mono text-[1.4rem] font-black uppercase tracking-[0.12em] text-[#102a43]">
+            <h2 className="font-mono text-[1.4rem] font-black uppercase tracking-[0.12em] text-[#102a43]">
               Daily Nationwide Coverage Updates
             </h2>
           </div>
@@ -1221,7 +1216,6 @@ export default function Home() {
                           ) : null}
                           <div>
                             <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#bfe4f5]">
-                              {article.date ? <span className="today-mark mr-2">{formatStoryMonthYear(article.date)}</span> : null}
                               {article.category}
                             </p>
                             <h3 className="mt-2 max-w-xl font-display text-2xl font-black uppercase leading-[0.92] tracking-[-0.02em] text-white">
@@ -1233,7 +1227,15 @@ export default function Home() {
                       <p className="mt-3 max-w-xl text-sm leading-6 text-white/90">{markTaxpayer(article.blurb)}</p>
                     </div>
                     <div className="inline-flex items-center justify-between border-t border-white/30 pt-3 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#dbeef7]">
-                      <span>Source: {article.source}</span>
+                      <span>
+                        Source: {article.source}
+                        {article.date ? (
+                          <>
+                            {" · "}
+                            <span className="story-date">{article.date}</span>
+                          </>
+                        ) : null}
+                      </span>
                       <span className="inline-flex items-center gap-1 rounded-md border border-white/40 bg-[#0f2a46] px-2 py-1 text-white">
                         READ ARTICLE <ArrowRight className="h-3.5 w-3.5" />
                       </span>

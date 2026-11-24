@@ -600,6 +600,12 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
     height: var(--site-header-height, 13.95rem);
   }
 
+  .story-date,
+  .dark .story-date,
+  .dark span.story-date {
+    color: var(--live-green) !important;
+  }
+
   @media (max-width: 639px) {
     .retro-news-logo {
       /* Give THE FLUSH REPORT room so the toilets don’t crowd the type. */

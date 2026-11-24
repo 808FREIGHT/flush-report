@@ -723,7 +723,9 @@ export function isScienceOrStandardsStory(title: string, summary: string, catego
 
 export function isFlushableWipesStory(title: string, summary: string, category = ""): boolean {
   const text = `${title} ${summary} ${category}`.toLowerCase();
-  return /(flushable wipe|flushable wipes|wet wipe|wet wipes|do not flush|wipes clog|wipe labeling|wippes act|\bwipe\b)/i.test(text);
+  return /(flushable wipe|flushable wipes|wet wipe|wet wipes|do not flush|wipes clog|wipe-?clog|wipe labeling|wippes act|non-?flushables?|unflushables?|\bwipes?\b)/i.test(
+    text,
+  );
 }
 
 /** Broad Flush Report relevance: wipes + solutions, science, receiving waters, orgs, and field tech. */
@@ -739,17 +741,20 @@ export function isFlushReportStory(title: string, summary: string, category = ""
   const text = `${title} ${summary} ${category}`;
   if (isScienceOrStandardsStory(title, summary, category)) return true;
 
-  const hasWastewater = /(wastewater|sewer|sewage|lift station|pump station|collections? system|treatment plant|WRRF|utility|public works)/i.test(
+  const hasWastewater = /(wastewater|sewer|sewage|lift[ -]?station|pump[ -]?station|collections? system|treatment plant|WRRF|utility|public works)/i.test(
     text,
   );
   const hasProblemOrSolution =
-    /(non-?flushable|nondispersible|ragging|deragg|fatberg|screen(?:ing)?|grinder|solids handling|cutter plate|overflow|backup|clog|blockage|receiving water|watershed|surfrider|work for water|\bWEF\b|NACWA|CASA|IWSFG|proposal|solution|pilot|labeling|WIPPES|do not flush)/i.test(
+    /(non-?flushables?|nondispersibles?|ragging|deragg|fatberg|screen(?:ing)?|grinder|solids handling|cutter plate|overflow|backup|clog|blockage|bypass|discharge|receiving water|watershed|surfrider|work for water|\bWEF\b|NACWA|CASA|IWSFG|proposal|solution|pilot|labeling|WIPPES|do not flush)/i.test(
       text,
     );
 
+  const hasSectorOrg = /(surfrider|work for water|\bWEF\b|NACWA|CASA|IWSFG)/i.test(text);
+
   if (hasWastewater && hasProblemOrSolution) return true;
+  if (hasSectorOrg && isFlushableWipesStory(title, summary, category)) return true;
   if (isFlushableWipesStory(title, summary, category) && hasWastewater) return true;
-  if (isFlushableWipesStory(title, summary, category) && /(law|bill|proposal|legislation|ordinance|standard|study)/i.test(text)) {
+  if (isFlushableWipesStory(title, summary, category) && /(law|bill|proposal|legislation|ordinance|standard|study|pump)/i.test(text)) {
     return true;
   }
   return false;
@@ -951,28 +956,6 @@ function isRecentPublication(dateValue: string, maxAgeDays = 21): boolean {
   if (!timestamp) return false;
   const ageMs = Date.now() - timestamp;
   return ageMs >= -86_400_000 && ageMs <= maxAgeDays * 86_400_000;
-}
-
-/** Card badge text: "NOV 2026" from a story date string. */
-export function formatStoryMonthYear(dateValue: string): string {
-  const timestamp = toStoryTimestamp(dateValue);
-  if (!timestamp) {
-    const match = dateValue.match(/([A-Za-z]+).*?(\d{4})/);
-    if (match) return `${match[1].slice(0, 3).toUpperCase()} ${match[2]}`;
-    return dateValue.toUpperCase();
-  }
-  return new Date(timestamp)
-    .toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })
-    .replace(",", "")
-    .toUpperCase();
-}
-
-/** Desk badge for the newsroom header (national drop timezone). */
-export function deskMonthYearLabel(timeZone = DAILY_SCRAPE_TIME_ZONE): string {
-  return new Date()
-    .toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone })
-    .replace(",", "")
-    .toUpperCase();
 }
 
 function curateByLane(stories: DailyNewsStory[]): DailyNewsStory[] {

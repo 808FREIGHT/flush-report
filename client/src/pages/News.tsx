@@ -18,13 +18,7 @@ import {
   Users,
   Waves,
 } from "lucide-react";
-import {
-  DailyNewsStory,
-  deskMonthYearLabel,
-  fallbackDailyStories,
-  formatStoryMonthYear,
-  loadDailyWastewaterStories,
-} from "@/lib/dailyNews";
+import { DailyNewsStory, fallbackDailyStories, loadDailyWastewaterStories } from "@/lib/dailyNews";
 import { markTaxpayer } from "@/lib/markTaxpayer";
 
 function iconForCategory(category: string) {
@@ -78,16 +72,13 @@ export default function News() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col justify-between gap-5 border-b border-[#cdeaf5] pb-6 md:flex-row md:items-end">
             <div>
-              <p className="live-flash-badge">
-                <span className="live-flash-text">{deskMonthYearLabel()}</span>
-              </p>
-              <h2 className="headline-section mt-3">
+              <h2 className="headline-section">
                 Laws, proposals, solutions, spills, warnings, money, technology, science, waters, and field crews.
               </h2>
             </div>
             <p className="max-w-xl text-sm leading-6 text-[#526d82]">
               {markTaxpayer(
-                "Every cycle starts by hunting new coverage across the full umbrella—laws, proposals, solutions, spills, science, conservation waters, tech, and taxpayer costs—then fills with the 2020–2026 standing archive. Each card leads with its month and year.",
+                "Every cycle starts by hunting new coverage across the full umbrella—laws, proposals, solutions, spills, science, conservation waters, tech, and taxpayer costs—then fills with the 2020–2026 standing archive.",
               )}
             </p>
             <p className="max-w-xl font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#64748b]">
@@ -102,7 +93,6 @@ export default function News() {
                 <article key={`${item.url}-${item.title}`} className="wastewater-news-card group">
                   <div className="flex items-start justify-between gap-5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="today-mark">{formatStoryMonthYear(item.date)}</span>
                       <span className="lower-third">{item.category}</span>
                       {item.location ? <span className="location-chip">{item.location}</span> : null}
                     </div>
@@ -112,7 +102,7 @@ export default function News() {
                   {item.summary ? <p className="mt-4 text-sm leading-6 text-[#526d82]">{markTaxpayer(item.summary)}</p> : null}
                   <div className="mt-7 flex flex-col gap-3 border-t border-[#d6eaf2] pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <span className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#526d82]">
-                      {item.source} · {item.date}
+                      {item.source} · <span className="story-date">{item.date}</span>
                     </span>
                     <a href={item.url} target="_blank" rel="noreferrer" className="article-read-button">
                       READ ARTICLE <ArrowRight className="h-3.5 w-3.5" />

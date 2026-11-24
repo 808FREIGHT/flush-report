@@ -122,11 +122,17 @@ When the user returns to build the operating agent, the product should move from
 
 The future agent should be designed as an operator, not just a chatbot. It should monitor inputs, verify sources, preserve receipts, produce reviewable drafts, ask for approval before public posting or outreach, and maintain a clear audit trail. Any actions involving publishing, outreach, payments, or personal information should require explicit human confirmation.
 
-## Suggested Cursor Prompt to Continue
+## Suggested Cursor / Claude Prompt to Continue
 
-Use this prompt in Cursor after opening the project:
+Use this prompt in Cursor (or Claude) after opening the project:
 
-> You are continuing The Flush Report, a static React/Tailwind frontend for a wastewater public-awareness media brand. Read `CURSOR_HANDOFF.md`, `preview_validation_notes.md`, `research_wastewater_news.md`, `ticker-source-notes.md`, `client/src/App.tsx`, `client/src/pages/Home.tsx`, `client/src/pages/News.tsx`, and `client/src/index.css` before editing. Preserve the Coastal Public-Service News / broadcast editorial design direction. First complete the static MVP: add clearer News navigation, improve truth-in-submission wording, polish mobile and accessibility, and keep all changes frontend-only unless explicitly asked to build the backend. Validate with `pnpm check` and `pnpm build` before handing back.
+> You are continuing The Flush Report, a React/Tailwind public-awareness news site about what happens after a bad flush. Read `CURSOR_HANDOFF.md`, `.cursor/rules/*`, `client/src/pages/Home.tsx`, `client/src/pages/News.tsx`, `client/src/lib/dailyNews.ts`, `server/newsProxy.ts`, and `client/src/index.css` before editing.
+>
+> Preserve Coastal Public-Service News design, `markTaxpayer()` / neon taxpayer treatment, and the homepage purpose sentence rules. Keep the brand-only header (no timezone/live clock in the header). Checkpoint `checkpoint/header-with-timezone-clock` exists only if that older header must be restored.
+>
+> News desk rules: always hunt **new** coverage first across the umbrella (laws, proposals, solutions, spills, warnings, money, technology, science/standards, conservation/receiving waters, field/workforce) via `/api/news-rss`, then fill with the 2020–2026 standing archive. Do **not** show LIVE/TODAY chips on articles — dates stay in the source line and use neon live green (`--live-green` / `#39ff14`). Prefer utilities, Surfrider/conservation groups, Work for Water / WEF / IWSFG, pumps/screens, and science-backed studies — filter consumer wipe-marketing noise.
+>
+> Stay frontend-lean unless asked for backend work. Validate with `pnpm check` and `pnpm build` before handing back.
 
 ## Important Guardrails
 
