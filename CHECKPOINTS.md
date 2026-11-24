@@ -20,4 +20,4 @@ git checkout checkpoint/header-with-timezone-clock -- client/src/pages/Home.tsx 
 
 ### Current direction
 
-The timezone select + live clock were restored beside the brand lockup on the news-desk branch. The git tag above remains the permanent restore point if the clock is removed again.
+The live header is brand-only again: logo + **THE FLUSH REPORT** (no timezone control, no live clock). The tag above remains the permanent restore point if that older header is needed.

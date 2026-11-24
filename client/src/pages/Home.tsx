@@ -17,20 +17,11 @@ import {
 import { FaFacebookF, FaInstagram, FaTiktok, FaXTwitter, FaYoutube } from "react-icons/fa6";
 import { SiThreads } from "react-icons/si";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   DailyNewsStory,
   DailyCostSignal,
   clearScrapeCaches,
-  deskMonthYearLabel,
   fallbackCostSignals,
   fallbackDailyStories,
-  formatStoryMonthYear,
   getScrapeStatusSnapshot,
   isUsOnlyStory,
   buildTodayCostSignals,
@@ -652,75 +643,6 @@ function ChannelBadge({
   );
 }
 
-const timeZoneOptions = [
-  { label: "Hawaii-Aleutian", value: "Pacific/Honolulu" },
-  { label: "Alaska", value: "America/Anchorage" },
-  { label: "Pacific", value: "America/Los_Angeles" },
-  { label: "Mountain", value: "America/Denver" },
-  { label: "Central", value: "America/Chicago" },
-  { label: "Eastern", value: "America/New_York" },
-];
-
-function LiveClock() {
-  const [now, setNow] = useState(() => new Date());
-  const [timeZone, setTimeZone] = useState("Pacific/Honolulu");
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const dateLine = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    weekday: "short",
-    month: "short",
-    day: "2-digit",
-  }).format(now);
-  const timeLine = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    timeZoneName: "short",
-  }).format(now);
-
-  return (
-    <div
-      className="live-clock ml-auto flex max-w-full min-w-0 flex-col items-end justify-center gap-1 sm:flex-row sm:items-center sm:gap-2.5"
-      aria-label="Live local date and time"
-    >
-      <div className="flex min-w-0 max-w-full items-center gap-1.5">
-        <span className="shrink-0 font-display text-[0.85rem] font-black uppercase leading-none tracking-[0.03em] text-[#87ceeb] sm:text-lg sm:tracking-[0.05em] xl:text-xl xl:tracking-[0.06em]">
-          Timezone:
-        </span>
-        <Select value={timeZone} onValueChange={setTimeZone}>
-          <SelectTrigger
-            size="sm"
-            className="h-9 w-auto max-w-full min-w-0 shrink border-[#6f95c4] bg-white px-2.5 font-mono text-[11px] font-black uppercase tracking-[0.06em] text-[#87ceeb] shadow-sm hover:border-[#87ceeb] sm:h-10 sm:tracking-[0.1em] xl:h-11 xl:px-3.5"
-            aria-label="Select timezone for live clock"
-          >
-            <SelectValue placeholder="Select" />
-          </SelectTrigger>
-          <SelectContent align="end" className="border-[#c7d8eb] bg-white text-[#102a43]">
-            {timeZoneOptions.map((zone) => (
-              <SelectItem key={zone.value} value={zone.value} className="font-mono text-xs uppercase tracking-[0.08em]">
-                {zone.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <time
-        dateTime={now.toISOString()}
-        className="flex min-w-0 items-baseline gap-1 text-right font-display text-[0.85rem] font-black uppercase leading-none tracking-[0.03em] text-[#87ceeb] sm:text-lg sm:tracking-[0.05em] xl:text-xl xl:tracking-[0.06em]"
-      >
-        <span className="whitespace-nowrap">{dateLine}</span>
-        <span className="whitespace-nowrap">{timeLine}</span>
-      </time>
-    </div>
-  );
-}
-
 function BrandLockup() {
   const leftBadgeRef = useRef<HTMLSpanElement>(null);
   const rightBadgeRef = useRef<HTMLSpanElement>(null);
@@ -1077,13 +999,10 @@ export default function Home() {
   return (
       <main className="min-h-screen overflow-hidden bg-white text-[#102a43] selection:bg-[#0b6fa4] selection:text-white dark:bg-[#111827] dark:text-[#e5edf7]">
       <header ref={headerRef} className="site-header fixed inset-x-0 top-0 z-50 border-b border-[#c7d8eb]/80 bg-white/92 shadow-[0_8px_30px_rgba(12,49,92,0.1)] backdrop-blur-xl dark:border-[#2b3950] dark:bg-[#0f172a]/92">
-          <div className="site-header__bar flex w-full min-h-[6.3rem] items-center justify-between gap-2 px-3 py-4 sm:min-h-[7.2rem] sm:gap-4 sm:px-6 sm:py-5 lg:px-8">
-          <a href="#top" className="site-header__brand group flex min-w-0 flex-1 items-center overflow-hidden" aria-label="The Flush Report home">
+          <div className="site-header__bar flex w-full min-h-[6.3rem] items-center justify-center px-3 py-4 sm:min-h-[7.2rem] sm:px-6 sm:py-5 lg:px-8">
+          <a href="#top" className="site-header__brand group flex min-w-0 items-center justify-center" aria-label="The Flush Report home">
             <BrandLockup />
           </a>
-          <div className="site-header__clock flex min-w-0 shrink-0 items-center">
-            <LiveClock />
-          </div>
         </div>
       </header>
 
@@ -1144,9 +1063,9 @@ export default function Home() {
                   Article: {markTaxpayer(activeHeroStory.title)}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className="today-mark">{formatStoryMonthYear(activeHeroStory.date)}</span>
                   <p className="font-mono text-[11px] font-black uppercase tracking-[0.11em] text-[#64748b]">
-                    {`By ${activeHeroStory.author || activeHeroStory.source} · ${activeHeroStory.date}`}
+                    By {activeHeroStory.author || activeHeroStory.source} ·{" "}
+                    <span className="story-date">{activeHeroStory.date}</span>
                   </p>
                   <a href={activeHeroStory.url} target="_blank" rel="noreferrer" className="article-read-button">
                     READ ARTICLE <ArrowRight className="h-3.5 w-3.5" />
@@ -1206,10 +1125,7 @@ export default function Home() {
       <section className="bg-white px-4 pb-16 pt-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 border-b border-[#d6eaf2] pb-4">
-            <p className="live-flash-badge">
-              <span className="live-flash-text">{deskMonthYearLabel()}</span>
-            </p>
-            <h2 className="mt-2 font-mono text-[1.4rem] font-black uppercase tracking-[0.12em] text-[#102a43]">
+            <h2 className="font-mono text-[1.4rem] font-black uppercase tracking-[0.12em] text-[#102a43]">
               Daily Nationwide Coverage Updates
             </h2>
           </div>
@@ -1300,7 +1216,6 @@ export default function Home() {
                           ) : null}
                           <div>
                             <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#bfe4f5]">
-                              {article.date ? <span className="today-mark mr-2">{formatStoryMonthYear(article.date)}</span> : null}
                               {article.category}
                             </p>
                             <h3 className="mt-2 max-w-xl font-display text-2xl font-black uppercase leading-[0.92] tracking-[-0.02em] text-white">
@@ -1312,7 +1227,15 @@ export default function Home() {
                       <p className="mt-3 max-w-xl text-sm leading-6 text-white/90">{markTaxpayer(article.blurb)}</p>
                     </div>
                     <div className="inline-flex items-center justify-between border-t border-white/30 pt-3 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#dbeef7]">
-                      <span>Source: {article.source}</span>
+                      <span>
+                        Source: {article.source}
+                        {article.date ? (
+                          <>
+                            {" · "}
+                            <span className="story-date">{article.date}</span>
+                          </>
+                        ) : null}
+                      </span>
                       <span className="inline-flex items-center gap-1 rounded-md border border-white/40 bg-[#0f2a46] px-2 py-1 text-white">
                         READ ARTICLE <ArrowRight className="h-3.5 w-3.5" />
                       </span>

@@ -128,9 +128,9 @@ Use this prompt in Cursor (or Claude) after opening the project:
 
 > You are continuing The Flush Report, a React/Tailwind public-awareness news site about what happens after a bad flush. Read `CURSOR_HANDOFF.md`, `.cursor/rules/*`, `client/src/pages/Home.tsx`, `client/src/pages/News.tsx`, `client/src/lib/dailyNews.ts`, `server/newsProxy.ts`, and `client/src/index.css` before editing.
 >
-> Preserve Coastal Public-Service News design, `markTaxpayer()` / neon taxpayer treatment, and the homepage purpose sentence rules. Keep the header brand lockup plus timezone select and live clock (checkpoint `checkpoint/header-with-timezone-clock`).
+> Preserve Coastal Public-Service News design, `markTaxpayer()` / neon taxpayer treatment, and the homepage purpose sentence rules. Keep the brand-only header (no timezone/live clock in the header). Checkpoint `checkpoint/header-with-timezone-clock` exists only if that older header must be restored.
 >
-> News desk rules: always hunt **new** coverage first across the umbrella (laws, proposals, solutions, spills, warnings, money, technology, science/standards, conservation/receiving waters, field/workforce) via `/api/news-rss`, then fill with the 2020–2026 standing archive. Cards use **month + year** badges (not LIVE/TODAY). Prefer utilities, Surfrider/conservation groups, Work for Water / WEF / IWSFG, pumps/screens, and science-backed studies — filter consumer wipe-marketing noise.
+> News desk rules: always hunt **new** coverage first across the umbrella (laws, proposals, solutions, spills, warnings, money, technology, science/standards, conservation/receiving waters, field/workforce) via `/api/news-rss`, then fill with the 2020–2026 standing archive. Do **not** show LIVE/TODAY chips on articles — dates stay in the source line and use neon live green (`--live-green` / `#39ff14`). Prefer utilities, Surfrider/conservation groups, Work for Water / WEF / IWSFG, pumps/screens, and science-backed studies — filter consumer wipe-marketing noise.
 >
 > Stay frontend-lean unless asked for backend work. Validate with `pnpm check` and `pnpm build` before handing back.
 
