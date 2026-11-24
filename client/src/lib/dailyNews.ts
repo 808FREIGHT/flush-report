@@ -20,6 +20,7 @@ export type DailyCostSignal = {
   url: string;
   location: string;
   title: string;
+  date?: string;
   ogImage?: string;
   releasedToday?: boolean;
 };
@@ -641,6 +642,7 @@ export const fallbackCostSignals: DailyCostSignal[] = [
     url: "https://thecordovatimes.com/2026/04/07/50k-city-sewer-pump-replacement-attributed-to-un-flushable-wipes/",
     location: "Cordova, Alaska",
     title: "Pump replacement cost linked to wipe-related clogs",
+    date: "Apr. 07, 2026",
   },
   {
     lane: "Public burden",
@@ -650,6 +652,7 @@ export const fallbackCostSignals: DailyCostSignal[] = [
     url: "https://www.nacwa.org/docs/default-source/resources---public/executive-summary_cost_of_wipes.pdf",
     location: "United States",
     title: "Annual utility burden from flushable wipes",
+    date: "Sep. 01, 2020",
   },
   {
     lane: "Downstream impact",
@@ -659,6 +662,7 @@ export const fallbackCostSignals: DailyCostSignal[] = [
     url: "https://marinedebris.noaa.gov/research/economic-impacts-marine-debris-tourism-dependent-communities",
     location: "Great Lakes Region",
     title: "Economic impact from marine debris in tourism communities",
+    date: "Jan. 01, 2021",
   },
 ];
 
@@ -1136,27 +1140,35 @@ const moneyLanes: Array<{
 export function buildTodayCostSignals(stories: DailyNewsStory[]): DailyCostSignal[] {
   const signals: DailyCostSignal[] = [];
   const used: DailyNewsStory[] = [];
+  const costTheme = /(cost|costly|expense|expensive|repair|repairs|replacement|maintenance|overtime|budget|funding|grant|ratepayer|taxpayer|burden|financial|money|cleanup|bill|rate)/i;
+  // Same umbrella scrape as the news desk, but keep only cost-themed hits with dollar figures.
+  const newestFirst = [...stories].sort((a, b) => toStoryTimestamp(b.date) - toStoryTimestamp(a.date));
 
   for (const lane of moneyLanes) {
-    const matches = stories.filter((story) => {
-      if (!story.releasedToday) return false;
+    const matches = newestFirst.filter((story) => {
       if (used.some((item) => sameArticle(item, story))) return false;
       const haystack = `${story.title} ${story.summary} ${story.category} ${story.location}`;
-      return lane.matcher.test(haystack) || (lane.lane === "Public burden" && /infrastructure money/i.test(story.category));
+      const laneHit =
+        lane.matcher.test(haystack) || (lane.lane === "Public burden" && /infrastructure money/i.test(story.category));
+      if (!laneHit || !costTheme.test(haystack)) return false;
+      return Boolean(extractDollarAmount(haystack));
     });
 
     for (const match of matches) {
       used.push(match);
       const haystack = `${match.title} ${match.summary}`;
+      const amount = extractDollarAmount(haystack);
+      if (!amount) continue;
       signals.push({
         lane: lane.lane,
-        amount: extractDollarAmount(haystack) ?? "",
+        amount,
         snippet: match.summary,
         source: match.source,
         url: match.url,
         location: match.location,
         title: match.title,
-        releasedToday: true,
+        date: match.date,
+        releasedToday: Boolean(match.releasedToday),
       });
     }
   }
@@ -1179,8 +1191,13 @@ export function readMoneyCardArchive(): DailyCostSignal[] {
 }
 
 export function rememberMoneyCards(incoming: DailyCostSignal[]): DailyCostSignal[] {
-  const archived = incoming.map((card) => ({ ...card, releasedToday: false }));
-  const next = takeUniqueArticles([...archived, ...readMoneyCardArchive()]).slice(0, MONEY_CARD_BASE_LIMIT);
+  // Archive only cost cards that still carry a dollar figure.
+  const withAmount = (card: DailyCostSignal) => Boolean(card.amount);
+  const archived = incoming.filter(withAmount).map((card) => ({ ...card, releasedToday: false }));
+  const next = takeUniqueArticles([...archived, ...readMoneyCardArchive().filter(withAmount)]).slice(
+    0,
+    MONEY_CARD_BASE_LIMIT,
+  );
   try {
     localStorage.setItem(MONEY_CARD_BASE_KEY, JSON.stringify(next));
   } catch {
@@ -1370,6 +1387,7 @@ export async function loadDailyCostSignals(options: { forceLive?: boolean } = {}
           url: match.url,
           location: match.location,
           title: match.title,
+          date: match.date,
           releasedToday: Boolean(match.releasedToday),
         });
         usedUrls.add(match.url);

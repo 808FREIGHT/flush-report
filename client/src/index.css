@@ -410,10 +410,23 @@ subtle motion, and consumer-accountability messaging with a soulful Hawaii origi
   .money-figure {
     max-width: 100%;
     overflow: hidden;
-    font-size: clamp(0.72rem, 15cqi, 3rem);
-    line-height: 0.95;
-    letter-spacing: -0.045em;
+    color: var(--live-green);
+    font-size: clamp(1.35rem, 32cqi, 4.1rem);
+    line-height: 0.9;
+    letter-spacing: -0.05em;
     white-space: nowrap;
+    text-shadow: 1px 2px 0 #1f7a12;
+  }
+
+  .money-figure .money-amount-digit,
+  .money-figure .money-amount-suffix {
+    color: var(--live-green);
+  }
+
+  .money-cost-amount {
+    color: var(--live-green) !important;
+    font-size: clamp(2.4rem, 8vw, 3.6rem);
+    text-shadow: 1px 2px 0 #1f7a12;
   }
 
   .money-snippet {

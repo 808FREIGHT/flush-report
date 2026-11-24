@@ -468,32 +468,39 @@ function toCostSectionArticles(stories: DailyNewsStory[]): CostSectionArticle[] 
   const hasDollarSignal = (text: string) =>
     /\$\s?\d[\d,]*(?:\.\d+)?|\b\d+(?:\.\d+)?\s?(million|billion|thousand|m|b|k)\b/i.test(text);
 
+  const hasCostTheme = (text: string) =>
+    /(cost|costly|expense|expensive|repair|repairs|replacement|maintenance|overtime|budget|funding|grant|ratepayer|taxpayer|burden|financial|money|cleanup|bill|rate)/i.test(
+      text,
+    );
+
   const costRepairScore = (story: DailyNewsStory): number => {
     const haystack = `${story.title} ${story.summary} ${story.category} ${story.location}`;
     let score = 0;
 
-    if (hasDollarSignal(haystack)) score += 5;
-    if (/(cost|costly|expense|expensive|repair|repairs|replacement|maintenance|overtime|budget|funding|grant|ratepayer|taxpayer|burden|financial|money)/i.test(haystack)) score += 4;
-    if (/(pump|lift station|sewer line|infrastructure|damage|failure)/i.test(haystack)) score += 2;
-    if (/infrastructure money/i.test(story.category)) score += 2;
+    if (hasDollarSignal(haystack)) score += 6;
+    if (hasCostTheme(haystack)) score += 6;
+    if (/(pump|lift station|sewer line|infrastructure|damage|failure|clog)/i.test(haystack)) score += 2;
+    if (/infrastructure money/i.test(story.category)) score += 3;
 
     return score;
   };
 
   return stories
     .map((story) => {
-      const costAmount = extractCostAmount(`${story.title} ${story.summary}`);
+      const haystack = `${story.title} ${story.summary} ${story.category}`;
+      const costAmount = extractCostAmount(haystack);
       const score = costRepairScore(story) + (costAmount ? 8 : 0);
-      return { story, score, costAmount };
+      return { story, score, costAmount, haystack };
     })
-    .filter((entry) => entry.score >= 8 && Boolean(entry.costAmount))
+    // Cost sections only: must carry a dollar figure and cost-theme language.
+    .filter((entry) => entry.score >= 14 && Boolean(entry.costAmount) && hasCostTheme(entry.haystack))
     .sort((a, b) => b.score - a.score)
     .map((entry) => ({
       story: entry.story,
       costAmount: entry.costAmount || "$—",
     }))
     .map(({ story, costAmount }) => ({
-      category: story.category,
+      category: "Cost signal",
       title: story.title,
       source: story.source,
       sourceUrl: story.sourceUrl,
@@ -526,6 +533,7 @@ function costArticleToMoneyCard(article: CostSectionArticle): DailyCostSignal {
     url: article.url,
     location: "",
     title: article.title,
+    date: article.date,
     releasedToday: Boolean(article.releasedToday),
   };
 }
@@ -534,11 +542,13 @@ function renderMoneyFigures(amount: string) {
   const parts = amount.split(/(\d[\d,]*(?:\.\d+)?)/);
   return parts.map((part, index) =>
     /^\d/.test(part) ? (
-      <span key={`${part}-${index}`} className="flush-accent-word">
+      <span key={`${part}-${index}`} className="money-amount-digit">
         {part}
       </span>
     ) : (
-      part
+      <span key={`${part}-${index}`} className="money-amount-suffix">
+        {part}
+      </span>
     ),
   );
 }
@@ -555,7 +565,7 @@ function sourceLogoUrl(sourceUrl?: string): string | null {
 
 const fallbackCostSectionArticles: CostSectionArticle[] = [
   {
-    category: "Utility warning",
+    category: "Cost signal",
     title: "City warns 'flushable' wipes are causing sewer damage and taxpayer costs",
     source: "City of Lennox",
     sourceUrl: "https://www.cityoflennoxsd.com",
@@ -565,11 +575,11 @@ const fallbackCostSectionArticles: CostSectionArticle[] = [
     date: "Apr. 14, 2026",
   },
   {
-    category: "Operations alert",
+    category: "Cost signal",
     title: "Public utilities report wipes clogging mains, lift stations, and pumps",
     source: "Great Bend Public Utilities",
     sourceUrl: "https://www.greatbendks.net",
-    blurb: "Explains how crews repeatedly deal with avoidable blockages across core wastewater infrastructure.",
+    blurb: "Crews face avoidable blockages that drive maintenance overtime and pump repair bills.",
     url: "https://www.greatbendks.net/CivicAlerts.aspx?AID=377",
     costAmount: "$50K+",
     date: "Apr. 21, 2026",
@@ -585,7 +595,7 @@ const fallbackCostSectionArticles: CostSectionArticle[] = [
     date: "Aug. 2024",
   },
   {
-    category: "Industry research",
+    category: "Cost signal",
     title: "Executive summary: annual utility burden from flushable wipes",
     source: "NACWA",
     sourceUrl: "https://www.nacwa.org",
@@ -595,14 +605,14 @@ const fallbackCostSectionArticles: CostSectionArticle[] = [
     date: "Sep. 01, 2020",
   },
   {
-    category: "Laws & proposals",
-    title: "Senate advances 'Do Not Flush' wipe labeling legislation",
-    source: "CASA",
-    sourceUrl: "https://casaweb.org",
-    blurb: "Tracks policy response to widespread cleanup, maintenance, and education costs.",
-    url: "https://casaweb.org/federal-legislative-update-4-13-26/",
-    costAmount: "$441M/yr",
-    date: "Apr. 13, 2026",
+    category: "Cost signal",
+    title: "Cordova ties $50K sewer pump replacement to unflushable wipes",
+    source: "Cordova Times",
+    sourceUrl: "https://thecordovatimes.com",
+    blurb: "City reporting linked wipe clogs to a major lift-station pump replacement cost.",
+    url: "https://thecordovatimes.com/2026/04/07/50k-city-sewer-pump-replacement-attributed-to-un-flushable-wipes/",
+    costAmount: "$50K+",
+    date: "Apr. 07, 2026",
   },
 ];
 
@@ -807,17 +817,20 @@ export default function Home() {
 
   const { moneyCardBase } = useMemo(() => {
     const ticker = takeUniqueArticles(tickerStories);
+    // Same general scrape as /news, then keep only cost-themed hits with dollar figures.
     const todaySignals = buildTodayCostSignals(ticker);
-    const libraryCards = [
-      ...fallbackCostSectionArticles.filter((article) => isUsOnlyStory(article.title, article.blurb, "United States")),
-      ...toCostSectionArticles(ticker),
-    ].map(costArticleToMoneyCard);
+    const scrapedCostCards = toCostSectionArticles(ticker).map(costArticleToMoneyCard);
+    const standingCostCards = fallbackCostSectionArticles
+      .filter((article) => isUsOnlyStory(article.title, article.blurb, "United States"))
+      .map(costArticleToMoneyCard);
+    const archivedCostCards = moneyArchive.filter((card) => Boolean(card.amount));
     const moneyCardBase = takeUniqueArticles([
       ...todaySignals,
+      ...scrapedCostCards,
       ...fallbackCostSignals,
-      ...moneyArchive,
-      ...libraryCards,
-    ]);
+      ...archivedCostCards,
+      ...standingCostCards,
+    ]).filter((card) => Boolean(card.amount));
 
     return { moneyCardBase };
   }, [tickerStories, moneyArchive]);
@@ -836,17 +849,16 @@ export default function Home() {
     takeUniqueArticles(visibleMoneyCards, seen);
     const ticker = takeUniqueArticles(tickerStories);
 
-    const scrapedCostArticles = toCostSectionArticles(ticker);
+    const scrapedCostArticles = toCostSectionArticles(ticker).sort((a, b) => {
+      const aTime = Date.parse((a.date || "").replace(/\./g, "")) || 0;
+      const bTime = Date.parse((b.date || "").replace(/\./g, "")) || 0;
+      return bTime - aTime;
+    });
     const standingCostArticles = fallbackCostSectionArticles.filter((article) =>
       isUsOnlyStory(article.title, article.blurb, "United States"),
     );
-    const combinedCostArticles = takeUniqueArticles(
-      mixFlaggedWithStanding(
-        scrapedCostArticles.filter((article) => article.releasedToday),
-        [...scrapedCostArticles.filter((article) => !article.releasedToday), ...standingCostArticles],
-      ),
-      seen,
-    );
+    // Same desk method as /news: newest scraped cost finds first, then standing archive.
+    const combinedCostArticles = takeUniqueArticles([...scrapedCostArticles, ...standingCostArticles], seen);
 
     const heroStories = takeUniqueArticles(mixHeroStories(ticker, hawaiiHeroStories), seen);
 
@@ -1126,8 +1138,13 @@ export default function Home() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 border-b border-[#d6eaf2] pb-4">
             <h2 className="font-mono text-[1.4rem] font-black uppercase tracking-[0.12em] text-[#102a43]">
-              Daily Nationwide Coverage Updates
+              Daily Nationwide Cost Updates
             </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#526d82]">
+              {markTaxpayer(
+                "These cards pull only cost-related hits from the same scrape net—pump repairs, ratepayer burden, and downstream cleanup money.",
+              )}
+            </p>
           </div>
           <div className="grid grid-cols-3 items-start gap-2 sm:gap-4">
             {visibleMoneyCards.map((signal) => (
@@ -1136,7 +1153,7 @@ export default function Home() {
                   {signal.lane}
                 </p>
                 {signal.amount ? (
-                  <h3 className="money-figure mt-1 font-display font-black uppercase text-white">{renderMoneyFigures(signal.amount)}</h3>
+                  <h3 className="money-figure mt-1 font-display font-black uppercase">{renderMoneyFigures(signal.amount)}</h3>
                 ) : (
                   <h3 className="money-snippet font-display font-black uppercase text-white">{markTaxpayer(signal.title)}</h3>
                 )}
@@ -1146,8 +1163,17 @@ export default function Home() {
                   <p className="money-snippet text-[#526d82]">{markTaxpayer(signal.snippet)}</p>
                 ) : null}
                 <div className="money-card-foot border-t border-[#d6eaf2]">
+                  <p className="font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#64748b]">
+                    {signal.source}
+                    {signal.date ? (
+                      <>
+                        {" · "}
+                        <span className="story-date">{signal.date}</span>
+                      </>
+                    ) : null}
+                  </p>
                   {signal.location && !signal.title.toLowerCase().includes(signal.location.toLowerCase()) ? (
-                    <p className="font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#64748b]">{signal.location}</p>
+                    <p className="mt-1 font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#64748b]">{signal.location}</p>
                   ) : null}
                   <a
                     href={signal.url}
@@ -1173,7 +1199,9 @@ export default function Home() {
                 <span className="flush-accent-word">better.</span>
               </h2>
               <p className="mt-6 text-lg leading-8 text-[#334e68]">
-                Every preventable clog pulls public money into emergency response, equipment repair, hauling, overtime, and replacement parts. That is money that could support better infrastructure, safer facilities, parks, roads, schools, shoreline protection, or community programs.
+                {markTaxpayer(
+                  "This strip uses the same scrape as the news desk, then keeps only cost-related hits—repairs, overtime, cleanup bills, and ratepayer burden. Every preventable clog pulls public money that could support better infrastructure, safer facilities, parks, roads, schools, or shoreline protection.",
+                )}
               </p>
             </div>
             <div className="flex h-full flex-col justify-end gap-3 lg:items-end">
@@ -1199,7 +1227,7 @@ export default function Home() {
                   >
                     <div>
                       <div className="relative">
-                        <span className="absolute right-0 top-0 font-display text-3xl font-black uppercase leading-none tracking-[-0.02em] text-[#87ceeb]">
+                        <span className="money-cost-amount absolute right-0 top-0 font-display font-black uppercase leading-none tracking-[-0.02em]">
                           {article.costAmount}
                         </span>
                         <div className="flex items-start gap-2 pr-28">
