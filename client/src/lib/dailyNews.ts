@@ -958,28 +958,6 @@ function isRecentPublication(dateValue: string, maxAgeDays = 21): boolean {
   return ageMs >= -86_400_000 && ageMs <= maxAgeDays * 86_400_000;
 }
 
-/** Card badge text: "NOV 2026" from a story date string. */
-export function formatStoryMonthYear(dateValue: string): string {
-  const timestamp = toStoryTimestamp(dateValue);
-  if (!timestamp) {
-    const match = dateValue.match(/([A-Za-z]+).*?(\d{4})/);
-    if (match) return `${match[1].slice(0, 3).toUpperCase()} ${match[2]}`;
-    return dateValue.toUpperCase();
-  }
-  return new Date(timestamp)
-    .toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })
-    .replace(",", "")
-    .toUpperCase();
-}
-
-/** Desk badge for the newsroom header (national drop timezone). */
-export function deskMonthYearLabel(timeZone = DAILY_SCRAPE_TIME_ZONE): string {
-  return new Date()
-    .toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone })
-    .replace(",", "")
-    .toUpperCase();
-}
-
 function curateByLane(stories: DailyNewsStory[]): DailyNewsStory[] {
   const selected: DailyNewsStory[] = [];
   const usedUrls = new Set<string>();
