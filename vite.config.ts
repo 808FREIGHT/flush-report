@@ -6,6 +6,7 @@ import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 import { ragOfficeMiddleware } from "./server/ragOffice";
+import { newsProxyMiddleware } from "./server/newsProxy";
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -208,6 +209,7 @@ function ragOfficeDevPlugin(): Plugin {
   return {
     name: "rag-office",
     configureServer(server) {
+      server.middlewares.use(newsProxyMiddleware);
       server.middlewares.use(ragOfficeMiddleware);
     },
   };
